@@ -51,6 +51,7 @@ class TwelveDataAdapterTest {
                 .setBody("""
                         {
                           "symbol": "AAPL",
+                          "name": "Apple Inc.",
                           "currency": "USD",
                           "close": "200.99",
                           "timestamp": 1755000000
@@ -59,6 +60,7 @@ class TwelveDataAdapterTest {
 
         CotacaoExterna cotacao = adapter.obterCotacao("AAPL");
 
+        assertThat(cotacao.nomeEmpresa()).isEqualTo("Apple Inc.");
         assertThat(cotacao.moeda()).isEqualTo(Moeda.USD);
         assertThat(cotacao.preco()).isEqualByComparingTo(new BigDecimal("200.9900"));
     }

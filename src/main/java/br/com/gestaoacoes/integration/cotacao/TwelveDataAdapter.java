@@ -44,6 +44,6 @@ public class TwelveDataAdapter implements CotacaoPort {
         OffsetDateTime dataHora = response.timestamp() == null
                 ? OffsetDateTime.now(ZoneOffset.UTC)
                 : Instant.ofEpochSecond(response.timestamp()).atOffset(ZoneOffset.UTC);
-        return new CotacaoExterna(null, moeda, preco, dataHora, PROVEDOR);
+        return new CotacaoExterna(response.name(), moeda, preco, dataHora, PROVEDOR);
     }
 }
