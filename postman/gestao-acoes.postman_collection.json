@@ -132,14 +132,13 @@
           }
         },
         {
-          "name": "Buscar ação por ticker e mercado",
+          "name": "Buscar ação por ticker",
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/acoes/ticker/PETR4?mercado=BRASIL",
+              "raw": "{{baseUrl}}/acoes/ticker/PETR4",
               "host": ["{{baseUrl}}"],
-              "path": ["acoes", "ticker", "PETR4"],
-              "query": [{ "key": "mercado", "value": "BRASIL" }]
+              "path": ["acoes", "ticker", "PETR4"]
             }
           }
         },

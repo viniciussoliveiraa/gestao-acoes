@@ -3,7 +3,6 @@ package br.com.gestaoacoes.service;
 import br.com.gestaoacoes.dto.AcaoRequest;
 import br.com.gestaoacoes.exception.AcaoDuplicadaException;
 import br.com.gestaoacoes.exception.RecursoNaoEncontradoException;
-import br.com.gestaoacoes.exception.TickerAmbiguoException;
 import br.com.gestaoacoes.integration.cotacao.CotacaoExterna;
 import br.com.gestaoacoes.integration.cotacao.CotacaoPort;
 import br.com.gestaoacoes.integration.cotacao.CotacaoStrategyResolver;
@@ -16,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 @Service
 public class AcaoService {
@@ -33,8 +31,8 @@ public class AcaoService {
         String ticker = TickerUtils.normalizar(request.ticker());
         Mercado mercado = request.mercado();
 
-        if (repository.findByTickerAndMercado(ticker, mercado).isPresent()) {
-            throw new AcaoDuplicadaException("Já existe uma ação cadastrada para este ticker e mercado");
+        if (repository.findByTicker(ticker).isPresent()) {
+            throw new AcaoDuplicadaException("Já existe uma ação cadastrada com este ticker");
         }
 
         CotacaoPort cotacaoPort = cotacaoStrategyResolver.resolver(mercado);
@@ -71,20 +69,9 @@ public class AcaoService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Ação não encontrada: id " + id));
     }
 
-    public Acao buscarPorTicker(String ticker, Mercado mercado) {
+    public Acao buscarPorTicker(String ticker) {
         String tickerNormalizado = TickerUtils.normalizar(ticker);
-        if (mercado != null) {
-            return repository.findByTickerAndMercado(tickerNormalizado, mercado)
-                    .orElseThrow(() -> new RecursoNaoEncontradoException("Ação não encontrada para o ticker e mercado informados"));
-        }
-        List<Acao> encontradas = repository.findByTicker(tickerNormalizado);
-        if (encontradas.isEmpty()) {
-            throw new RecursoNaoEncontradoException("Ação não encontrada para o ticker informado");
-        }
-        if (encontradas.size() > 1) {
-            throw new TickerAmbiguoException(
-                    "Ticker existe em mais de um mercado; informe o parâmetro 'mercado'");
-        }
-        return encontradas.get(0);
+        return repository.findByTicker(tickerNormalizado)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Ação não encontrada para o ticker informado"));
     }
 }

@@ -4,7 +4,6 @@ import br.com.gestaoacoes.dto.AcaoRequest;
 import br.com.gestaoacoes.exception.AcaoDuplicadaException;
 import br.com.gestaoacoes.exception.IntegracaoExternaIndisponivelException;
 import br.com.gestaoacoes.exception.RecursoNaoEncontradoException;
-import br.com.gestaoacoes.exception.TickerAmbiguoException;
 import br.com.gestaoacoes.exception.TickerNaoEncontradoException;
 import br.com.gestaoacoes.integration.cotacao.CotacaoExterna;
 import br.com.gestaoacoes.integration.cotacao.CotacaoPort;
@@ -20,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,7 +46,7 @@ class AcaoServiceTest {
     void registrarComSucessoPersisteAcao() {
         AcaoService service = service();
         AcaoRequest request = new AcaoRequest(" petr4 ", Mercado.BRASIL);
-        when(repository.findByTickerAndMercado("PETR4", Mercado.BRASIL)).thenReturn(Optional.empty());
+        when(repository.findByTicker("PETR4")).thenReturn(Optional.empty());
         when(strategyResolver.resolver(Mercado.BRASIL)).thenReturn(cotacaoPort);
         when(cotacaoPort.obterCotacao("PETR4")).thenReturn(new CotacaoExterna(
                 "Petrobras", Moeda.BRL, new BigDecimal("38.4200"), OffsetDateTime.now(), "brapi"));
@@ -61,11 +59,10 @@ class AcaoServiceTest {
     }
 
     @Test
-    void tickerEMercadoDuplicadoNaoConsultaCotacao() {
+    void tickerDuplicadoNaoConsultaCotacao() {
         AcaoService service = service();
         AcaoRequest request = new AcaoRequest("PETR4", Mercado.BRASIL);
-        when(repository.findByTickerAndMercado("PETR4", Mercado.BRASIL))
-                .thenReturn(Optional.of(mockAcao()));
+        when(repository.findByTicker("PETR4")).thenReturn(Optional.of(mockAcao()));
 
         assertThatThrownBy(() -> service.registrar(request)).isInstanceOf(AcaoDuplicadaException.class);
 
@@ -76,7 +73,7 @@ class AcaoServiceTest {
     void tickerNaoEncontradoNaoPersisteNada() {
         AcaoService service = service();
         AcaoRequest request = new AcaoRequest("ZZZZ9", Mercado.BRASIL);
-        when(repository.findByTickerAndMercado("ZZZZ9", Mercado.BRASIL)).thenReturn(Optional.empty());
+        when(repository.findByTicker("ZZZZ9")).thenReturn(Optional.empty());
         when(strategyResolver.resolver(Mercado.BRASIL)).thenReturn(cotacaoPort);
         when(cotacaoPort.obterCotacao("ZZZZ9")).thenThrow(new TickerNaoEncontradoException("não encontrado"));
 
@@ -118,30 +115,25 @@ class AcaoServiceTest {
     }
 
     @Test
-    void buscarPorTickerAmbiguoSemMercadoLancaExcecao() {
+    void buscarPorTickerInexistenteLancaRecursoNaoEncontrado() {
         AcaoService service = service();
-        when(repository.findByTicker("IBM")).thenReturn(List.of(
-                mockAcao(), acaoComMercado(Mercado.ESTADOS_UNIDOS)));
+        when(repository.findByTicker("ZZZZ9")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.buscarPorTicker("IBM", null)).isInstanceOf(TickerAmbiguoException.class);
+        assertThatThrownBy(() -> service.buscarPorTicker("ZZZZ9")).isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
     @Test
-    void buscarPorTickerInexistenteLancaRecursoNaoEncontrado() {
+    void buscarPorTickerComSucessoNormalizaEntrada() {
         AcaoService service = service();
-        when(repository.findByTicker("ZZZZ9")).thenReturn(List.of());
+        when(repository.findByTicker("PETR4")).thenReturn(Optional.of(mockAcao()));
 
-        assertThatThrownBy(() -> service.buscarPorTicker("ZZZZ9", null)).isInstanceOf(RecursoNaoEncontradoException.class);
+        Acao encontrada = service.buscarPorTicker(" petr4 ");
+
+        assertThat(encontrada.getTicker()).isEqualTo("PETR4");
     }
 
     private Acao mockAcao() {
         return new Acao("PETR4", "Petrobras", Mercado.BRASIL, Moeda.BRL, new BigDecimal("38.4200"),
                 OffsetDateTime.now(), "brapi", OffsetDateTime.now());
-    }
-
-    private Acao acaoComMercado(Mercado mercado) {
-        Moeda moeda = mercado == Mercado.BRASIL ? Moeda.BRL : Moeda.USD;
-        return new Acao("IBM", "IBM Corp", mercado, moeda, new BigDecimal("100.0000"),
-                OffsetDateTime.now(), "teste", OffsetDateTime.now());
     }
 }

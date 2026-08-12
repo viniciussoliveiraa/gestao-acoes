@@ -24,11 +24,15 @@ Projeto acadêmico novo (sem código de domínio existente — apenas o esquelet
 
 As 8 perguntas da seção 17 do prompt mestre alteravam comportamento externamente observável ou escopo. Todas foram confirmadas pelo usuário em 2026-08-12, incluindo a fonte de validação CVM (pergunta 5): usar a BrasilAPI mesmo, sem exigir outra fonte oficial.
 
+**Revisão em 2026-08-12 (posterior):** o usuário forneceu o enunciado original do trabalho acadêmico. Duas decisões desta tabela foram corrigidas para bater com o texto literal do enunciado, substituindo a recomendação inicial (que havia sido feita sem acesso a esse documento):
+- **Pergunta 2**: o enunciado (RN07) diz "Não será permitido cadastrar duas ações com o mesmo ticker" — sem menção a mercado. Corrigido de `(ticker, mercado)` para **ticker global**.
+- **Pergunta 3**: o enunciado (seção 6, não funcionais) lista "O banco de dados deverá ser H2, MySQL e PostgreSQL" como os três obrigatórios, não como opção. Corrigido de "MySQL opcional" para **MySQL obrigatório**.
+
 | # | Pergunta | Decisão confirmada |
 |---|---|---|
 | 1 | Instituição não validada na CVM: rejeitar ou salvar como `NAO_VALIDADA`? | **Rejeitar** (RN03, `422`) — `gestao-corretoras`, `validacao-instituicao-financeira` |
-| 2 | Unicidade de ação: ticker global ou `(ticker, mercado)`? | **`(ticker, mercado)`** — `gestao-acoes` |
-| 3 | Banco principal: PostgreSQL + H2 para testes, MySQL opcional? | **Sim** — ver "Bancos e perfis" abaixo |
+| 2 | Unicidade de ação: ticker global ou `(ticker, mercado)`? | **Ticker global** (RN07 do enunciado) — `gestao-acoes`. *Revisado em 2026-08-12; ver nota acima.* |
+| 3 | Banco principal: PostgreSQL + H2 para testes, MySQL opcional? | **H2, MySQL e PostgreSQL, todos obrigatórios** (seção 6 do enunciado) — ver "Bancos e perfis" abaixo. *Revisado em 2026-08-12; ver nota acima.* |
 | 4 | Twelve Data como provedor US padrão, Alpha Vantage como alternativa configurável? | **Sim** — `app.market-data.us-provider=twelve-data` por padrão |
 | 5 | Recurso de corretoras/CVM da BrasilAPI atende à validação exigida? | **Confirmado: usar a BrasilAPI** como única fonte de validação CVM no MVP |
 | 6 | Número, complemento, email, telefone: editáveis pelo usuário? | **Sim para `numero` e `complemento`** (a ViaCEP não os fornece); `email`/`telefone` vêm da BrasilAPI quando disponíveis, e podem ser complementados manualmente como opcionais (não bloqueiam validação) |
@@ -64,14 +68,14 @@ DTOs de resposta de cada provedor ficam confinados ao respectivo adaptador; a co
 
 ### Bancos e perfis
 
-- Perfil `test`: H2 em memória, para testes automatizados (unitários e a maioria dos de integração).
-- Perfil `dev`/`default`: PostgreSQL local, banco persistente principal.
-- Perfil `mysql`: opcional, só criado se a avaliação exigir explicitamente; migrations Flyway equivalentes em `db/migration/mysql`.
-- `ddl-auto=validate` em todos os perfis não-`test`; `create-drop` apenas no perfil `test`. Schema é sempre gerado por Flyway, nunca por `ddl-auto=update`.
+- Perfil `test`: H2 em memória (`MODE=PostgreSQL`), para testes automatizados. Migrations em `db/migration/postgresql` (H2 nesse modo é compatível com a sintaxe usada).
+- Perfil `dev`/`default`: PostgreSQL local, banco persistente principal. Migrations em `db/migration/postgresql`.
+- Perfil `mysql`: **obrigatório pelo enunciado** (seção 6: "H2, MySQL e PostgreSQL"). Migrations próprias em `db/migration/mysql` (sintaxe MySQL não é totalmente compatível com PostgreSQL — ver nota de implementação abaixo).
+- `ddl-auto=validate` em todos os perfis; `create-drop` nunca é usado. Schema é sempre gerado por Flyway, nunca por `ddl-auto=update`.
 
-### Unicidade de ticker: `(ticker, mercado)`
+### Unicidade de ticker: global (RN07)
 
-Constraint única composta `uk_acao_ticker_mercado (ticker, mercado)`. Ticker sozinho não é único porque o mesmo símbolo pode existir em bolsas diferentes (ex.: `IBM` poderia coincidir em tickers listados no Brasil via BDR, ainda que fora do escopo do MVP consultar BDRs).
+**Decisão revisada em 2026-08-12** após o usuário fornecer o enunciado original: RN07 diz literalmente "Não será permitido cadastrar duas ações com o mesmo ticker", sem menção a mercado. Constraint única simples `uk_acao_ticker (ticker)` — aplicada via migration `V3__ticker_unicidade_global.sql` (não editamos a `V2` original para preservar o checksum já aplicado em bancos existentes; ver Flyway). Um ticker só pode existir em um mercado por vez no sistema; símbolos coincidentes entre bolsas diferentes (ex.: BDRs) não são um cenário suportado neste MVP.
 
 ### Política de instituição não validada: rejeitar (RN03)
 
@@ -89,7 +93,7 @@ Cada operação de escrita (`registrarCorretora`, `registrarAcao`, `atualizarCot
 
 ### Tratamento de duplicidade concorrente
 
-Constraints únicas no banco (`uk_corretora_cnpj`, `uk_acao_ticker_mercado`) são a fonte de verdade; a verificação de duplicidade na aplicação é uma otimização (fail-fast), não a única defesa. Um `@ExceptionHandler` global traduz `DataIntegrityViolationException` (violação dessas constraints) em `409` no formato Problem Details.
+Constraints únicas no banco (`uk_corretora_cnpj`, `uk_acao_ticker`) são a fonte de verdade; a verificação de duplicidade na aplicação é uma otimização (fail-fast), não a única defesa. Um `@ExceptionHandler` global traduz `DataIntegrityViolationException` (violação dessas constraints) em `409` no formato Problem Details.
 
 ### Mapeamento definitivo de códigos HTTP por exceção
 
@@ -104,11 +108,10 @@ Os specs deixam alguns casos como "404 ou 422, conforme `design.md`". Decisão f
 | CEP válido mas inexistente (ViaCEP `erro:true`) | `CepNaoEncontradoException` | 404 |
 | Ticker não reconhecido pelo provedor do mercado informado (inclui mercado incompatível) | `TickerNaoEncontradoException` | 404 |
 | Corretora/ação não encontrada por id/cnpj/ticker | `RecursoNaoEncontradoException` | 404 |
-| Busca por ticker sem `mercado` que casa com mais de um mercado | `TickerAmbiguoException` | 400 (solicita o parâmetro `mercado`; não retorna lista) |
 | CNPJ já cadastrado (checagem de aplicação, antes do banco) | `CorretoraDuplicadaException` | 409 |
-| `(ticker, mercado)` já cadastrado (checagem de aplicação, antes do banco) | `AcaoDuplicadaException` | 409 |
+| `ticker` já cadastrado (checagem de aplicação, antes do banco) | `AcaoDuplicadaException` | 409 |
 | CNPJ válido e encontrado, mas não validado como instituição financeira (RN03) | `InstituicaoNaoValidadaException` | 422 |
-| CNPJ duplicado / `(ticker, mercado)` duplicado | `DataIntegrityViolationException` traduzida | 409 |
+| CNPJ duplicado / `ticker` duplicado | `DataIntegrityViolationException` traduzida | 409 |
 | Provedor externo indisponível, timeout, resposta malformada ou `429` | `IntegracaoExternaIndisponivelException` | 502 |
 
 `502` foi escolhido (em vez de `503`) para todos os casos de falha de dependência externa, por representar de forma mais precisa "um upstream que este serviço depende respondeu mal ou não respondeu", reservando `503` para uma eventual indisponibilidade do próprio serviço (não usado no MVP).
@@ -222,7 +225,7 @@ sequenceDiagram
     Service-->>Controller: 502/503
   end
   Service->>DB: salvar ação (transação)
-  alt (ticker, mercado) duplicado
+  alt ticker duplicado (qualquer mercado)
     DB-->>Service: violação de unicidade
     Service-->>Controller: 409
   end
@@ -276,9 +279,11 @@ CREATE TABLE acao (
   data_hora_cotacao TIMESTAMP WITH TIME ZONE NOT NULL,
   provedor_origem VARCHAR(30) NOT NULL,
   criado_em TIMESTAMP WITH TIME ZONE NOT NULL,
-  CONSTRAINT uk_acao_ticker_mercado UNIQUE (ticker, mercado)
+  CONSTRAINT uk_acao_ticker UNIQUE (ticker)
 );
 ```
+
+Estado final após `V3__ticker_unicidade_global.sql` (a `V2` original criava `uk_acao_ticker_mercado`; a `V3` a substitui por `uk_acao_ticker`, ver decisão revisada acima).
 
 ## Contratos dos adaptadores externos (confirmados em 2026-08-12 por chamada real, ver tasks.md 5.1)
 
@@ -297,7 +302,7 @@ Todos os contratos acima foram exercitados com chamadas HTTP reais durante a esp
 
 - **[Risco] Documentação da BrasilAPI para recurso CVM pode mudar ou ser instável** → Mitigação: isolado em um único adaptador (`BrasilApiCvmAdapter`); troca de fonte não afeta o domínio, apenas esse adaptador.
 - **[Risco] Limites de requisições dos planos gratuitos (Twelve Data, Alpha Vantage, brapi.dev) podem bloquear testes manuais/demonstração** → Mitigação: suíte automatizada sempre mockada; README documenta limites conhecidos; cache opcional como diferencial.
-- **[Risco] `(ticker, mercado)` como chave pode não bater com a expectativa do avaliador (que pode esperar apenas `ticker`)** → Mitigação: decisão registrada explicitamente para aprovação (pergunta 2); reversível trocando a constraint antes do `apply`.
+- **[Risco materializado e corrigido em 2026-08-12]** A escolha original de `(ticker, mercado)` divergia do enunciado real (RN07: ticker global). Corrigido via migration `V3` + refatoração de `AcaoRepository`/`AcaoService`/`AcaoController` antes da entrega.
 - **[Trade-off] Rejeitar cadastro de instituição não validada (RN03) é mais simples, mas menos flexível que `NAO_VALIDADA`** → aceito para o MVP; diferencial futuro documentado.
 - **[Risco] OpenFeign com `ErrorDecoder` por adaptador aumenta código boilerplate comparado a um único WebClient genérico** → aceito em troca de isolamento mais claro por provedor.
 

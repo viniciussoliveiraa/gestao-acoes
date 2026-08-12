@@ -4,7 +4,6 @@ import br.com.gestaoacoes.dto.AcaoRequest;
 import br.com.gestaoacoes.dto.AcaoResponse;
 import br.com.gestaoacoes.mapper.AcaoMapper;
 import br.com.gestaoacoes.model.Acao;
-import br.com.gestaoacoes.model.Mercado;
 import br.com.gestaoacoes.service.AcaoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -50,9 +48,8 @@ public class AcaoController {
     }
 
     @GetMapping("/ticker/{ticker}")
-    public AcaoResponse buscarPorTicker(@PathVariable String ticker,
-                                         @RequestParam(required = false) Mercado mercado) {
-        return mapper.toResponse(service.buscarPorTicker(ticker, mercado));
+    public AcaoResponse buscarPorTicker(@PathVariable String ticker) {
+        return mapper.toResponse(service.buscarPorTicker(ticker));
     }
 
     @PutMapping("/{id}/atualizar-cotacao")

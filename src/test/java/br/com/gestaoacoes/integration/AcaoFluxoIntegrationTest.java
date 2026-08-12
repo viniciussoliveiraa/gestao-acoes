@@ -80,8 +80,7 @@ class AcaoFluxoIntegrationTest {
                 .andExpect(jsonPath("$.ticker").value("PETR4"))
                 .andExpect(jsonPath("$.cotacaoAtual").value(38.42));
 
-        Long id = repository.findByTickerAndMercado("PETR4", br.com.gestaoacoes.model.Mercado.BRASIL)
-                .orElseThrow().getId();
+        Long id = repository.findByTicker("PETR4").orElseThrow().getId();
 
         brapiServer.enqueue(new MockResponse().setResponseCode(200)
                 .setHeader("Content-Type", "application/json")

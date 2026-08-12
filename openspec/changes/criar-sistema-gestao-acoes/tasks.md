@@ -21,8 +21,8 @@
 
 ## 4. Persistência e constraints
 
-- [x] 4.1 Criar `CorretoraRepository` e `AcaoRepository` (Spring Data JPA) com `findByCnpj`, `findByTickerAndMercado`, `findByTicker`; paginação herdada de `JpaRepository`. Verificação: `@DataJpaTest` cobrindo busca por CNPJ e por `(ticker, mercado)` (verde).
-- [x] 4.2 Testar violação das constraints únicas via `@DataJpaTest` (corretora duplicada, RN07 ação duplicada) e confirmar que mesmo ticker em mercados diferentes é permitido. Verificação: `CorretoraRepositoryTest` (2 testes) e `AcaoRepositoryTest` (3 testes) verdes. Nota: pacotes de `@DataJpaTest`/`@AutoConfigureTestDatabase` mudaram no Spring Boot 4 para `org.springframework.boot.data.jpa.test.autoconfigure` e `org.springframework.boot.jdbc.test.autoconfigure`, respectivamente.
+- [x] 4.1 Criar `CorretoraRepository` e `AcaoRepository` (Spring Data JPA) com `findByCnpj`, `findByTicker` (ticker globalmente único, RN07 — ver revisão em `design.md`); paginação herdada de `JpaRepository`. Verificação: `@DataJpaTest` cobrindo busca por CNPJ e por `ticker` (verde).
+- [x] 4.2 Testar violação das constraints únicas via `@DataJpaTest` (corretora duplicada, RN07 ação duplicada) e confirmar que o mesmo ticker é rejeitado mesmo em mercados diferentes. Verificação: `CorretoraRepositoryTest` (2 testes) e `AcaoRepositoryTest` (3 testes) verdes. Nota: pacotes de `@DataJpaTest`/`@AutoConfigureTestDatabase` mudaram no Spring Boot 4 para `org.springframework.boot.data.jpa.test.autoconfigure` e `org.springframework.boot.jdbc.test.autoconfigure`, respectivamente.
 
 ## 5. Portas e adaptadores externos
 
@@ -39,12 +39,12 @@
 - [x] 6.1 Implementar `CorretoraService.registrar` orquestrando CNPJ → duplicidade → CEP (formato) → CVM → endereço → persistência (sem `@Transactional` explícito: chamadas externas ficam fora de transação e o único `save()` já é atômico via Spring Data), sem persistência parcial (RN10). Verificação: `CorretoraServiceTest` (6 testes: sucesso, CNPJ inválido, CNPJ duplicado, CEP inválido, instituição não validada, falha externa não persiste).
 - [x] 6.2 Implementar `AcaoService.registrar` orquestrando normalização → duplicidade → seleção de estratégia → validação de ticker → persistência (RN05-RN07, RN10). Verificação: testes cobrindo ticker válido, ticker inexistente, duplicidade (parte de `AcaoServiceTest`).
 - [x] 6.3 Implementar `AcaoService.atualizarCotacao` mantendo a última cotação válida em caso de falha do provedor (RN11) — a entidade só é mutada/salva após a chamada externa ter sucesso. Verificação: teste `falhaNaAtualizacaoMantemUltimaCotacaoValida` confirma que o valor não muda e `save` nunca é chamado.
-- [x] 6.4 Implementar paginação (`listar` via `Page<T>` do Spring Data) e buscas (`buscarPorId`, `buscarPorCnpj`, `buscarPorTicker` com/sem `mercado`, incluindo `TickerAmbiguoException` quando o ticker existe em mais de um mercado sem `mercado` informado). Verificação: `AcaoServiceTest#buscarPorTickerAmbiguoSemMercadoLancaExcecao` e `#buscarPorTickerInexistenteLancaRecursoNaoEncontrado` verdes. `AcaoServiceTest`: 7 testes, `CorretoraServiceTest`: 6 testes, todos verdes.
+- [x] 6.4 Implementar paginação (`listar` via `Page<T>` do Spring Data) e buscas (`buscarPorId`, `buscarPorCnpj`, `buscarPorTicker` — sem parâmetro de mercado, já que o ticker é globalmente único). Verificação: `AcaoServiceTest#buscarPorTickerInexistenteLancaRecursoNaoEncontrado`/`#buscarPorTickerComSucessoNormalizaEntrada` verdes.
 
 ## 7. Controllers e contratos REST
 
 - [x] 7.1 Implementar `CorretoraController`: `POST /corretoras`, `GET /corretoras`, `GET /corretoras/{id}`, `GET /corretoras/cnpj/{*cnpj}` (catch-all path variable — CNPJ mascarado contém `/`, que precisa capturar o restante do path; ver nota em `design.md`). Verificação: `@WebMvcTest` em 8.1 (após o handler global existir), validado também manualmente com a aplicação real rodando.
-- [x] 7.2 Implementar `AcaoController`: `POST /acoes`, `GET /acoes`, `GET /acoes/{id}`, `GET /acoes/ticker/{ticker}` (parâmetro `mercado` opcional), `PUT /acoes/{id}/atualizar-cotacao`. Verificação: `@WebMvcTest` em 8.1.
+- [x] 7.2 Implementar `AcaoController`: `POST /acoes`, `GET /acoes`, `GET /acoes/{id}`, `GET /acoes/ticker/{ticker}`, `PUT /acoes/{id}/atualizar-cotacao`. Verificação: `@WebMvcTest` em 8.1.
 - [x] 7.3 Garantir que nenhum controller chama adaptador de integração diretamente (apenas via service). Verificação: revisão de código — `CorretoraController`/`AcaoController` só importam `service`/`mapper`/`dto`/`model`, nenhuma dependência de `integration.*`.
 
 ## 8. Tratamento global de erros

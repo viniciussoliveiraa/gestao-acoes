@@ -24,17 +24,17 @@ class AcaoRepositoryTest {
     private AcaoRepository repository;
 
     @Test
-    void salvaEBuscaPorTickerEMercado() {
+    void salvaEBuscaPorTicker() {
         repository.save(novaAcao("PETR4", Mercado.BRASIL));
 
-        Optional<Acao> encontrada = repository.findByTickerAndMercado("PETR4", Mercado.BRASIL);
+        Optional<Acao> encontrada = repository.findByTicker("PETR4");
 
         assertThat(encontrada).isPresent();
         assertThat(encontrada.get().getMoeda()).isEqualTo(Moeda.BRL);
     }
 
     @Test
-    void rejeitaMesmoTickerEMercadoDuplicado() {
+    void rejeitaTickerDuplicadoNoMesmoMercado() {
         repository.saveAndFlush(novaAcao("PETR4", Mercado.BRASIL));
 
         assertThatThrownBy(() -> repository.saveAndFlush(novaAcao("PETR4", Mercado.BRASIL)))
@@ -42,12 +42,11 @@ class AcaoRepositoryTest {
     }
 
     @Test
-    void permiteMesmoTickerEmMercadosDiferentes() {
+    void rejeitaMesmoTickerEmMercadosDiferentes() {
         repository.saveAndFlush(novaAcao("IBM", Mercado.ESTADOS_UNIDOS));
 
-        repository.saveAndFlush(novaAcao("IBM", Mercado.BRASIL));
-
-        assertThat(repository.findByTicker("IBM")).hasSize(2);
+        assertThatThrownBy(() -> repository.saveAndFlush(novaAcao("IBM", Mercado.BRASIL)))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private Acao novaAcao(String ticker, Mercado mercado) {

@@ -73,7 +73,7 @@ A suíte completa (74 testes na versão atual: unitários, `@DataJpaTest`, `@Web
 | `POST` | `/acoes` | Cadastra ação (ticker validado e cotação obtida do provedor do mercado) |
 | `GET` | `/acoes` | Lista ações (paginado) |
 | `GET` | `/acoes/{id}` | Busca ação por ID |
-| `GET` | `/acoes/ticker/{ticker}?mercado=` | Busca ação por ticker (`mercado` obrigatório se o ticker existir em mais de um mercado) |
+| `GET` | `/acoes/ticker/{ticker}` | Busca ação por ticker (globalmente único — RN07) |
 | `PUT` | `/acoes/{id}/atualizar-cotacao` | Atualiza a cotação de uma ação já cadastrada |
 
 Payloads, exemplos de sucesso/erro e todos os códigos HTTP estão documentados no Swagger UI e na spec `openspec/changes/criar-sistema-gestao-acoes/specs/gestao-corretoras` / `gestao-acoes`. Uma coleção Postman com exemplos prontos está em `postman/gestao-acoes.postman_collection.json`.

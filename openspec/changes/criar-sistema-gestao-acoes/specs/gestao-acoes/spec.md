@@ -1,6 +1,6 @@
 ## Purpose
 
-Permite cadastrar ações brasileiras e americanas com ticker validado e cotação obtida de um provedor externo, consultá-las por listagem paginada, ID ou ticker/mercado, e atualizar a cotação sob demanda.
+Permite cadastrar ações brasileiras e americanas com ticker validado e cotação obtida de um provedor externo, consultá-las por listagem paginada, ID ou ticker (globalmente único), e atualizar a cotação sob demanda.
 
 ## ADDED Requirements
 
@@ -25,18 +25,18 @@ O sistema SHALL confirmar, por meio da capacidade `integracao-cotacoes`, que o t
 - **WHEN** o cliente cadastra um ticker que o provedor do mercado informado não reconhece
 - **THEN** o sistema responde `404` ou `422` (conforme `design.md`) informando que o ticker não foi encontrado, e nenhuma ação é persistida
 
-### Requirement: Unicidade por ticker e mercado
-O sistema SHALL impedir o cadastro de duas ações com o mesmo par `(ticker normalizado, mercado)`. Ativos com o mesmo símbolo em mercados diferentes SHALL ser tratados como ações distintas. Essa restrição SHALL ser garantida tanto na aplicação quanto por constraint única composta no banco de dados.
+### Requirement: Unicidade global de ticker
+O sistema SHALL impedir o cadastro de duas ações com o mesmo `ticker` normalizado, independentemente do mercado (RN07 do enunciado original: "Não será permitido cadastrar duas ações com o mesmo ticker"). Essa restrição SHALL ser garantida tanto na aplicação quanto por constraint única no banco de dados sobre a coluna `ticker`.
 
 #### Scenario: Ticker duplicado no mesmo mercado
 - **GIVEN** uma ação `PETR4` já cadastrada no mercado `BRASIL`
 - **WHEN** o cliente envia `POST /acoes` com `ticker: "PETR4"` e `mercado: "BRASIL"`
 - **THEN** o sistema responde `409` com Problem Details indicando duplicidade, e nenhuma nova ação é criada
 
-#### Scenario: Mesmo símbolo em mercados diferentes é permitido
+#### Scenario: Mesmo símbolo em mercados diferentes também é rejeitado
 - **GIVEN** uma ação `IBM` já cadastrada no mercado `ESTADOS_UNIDOS`
-- **WHEN** o cliente cadastra `ticker: "IBM"` e `mercado: "BRASIL"` (hipoteticamente válido no provedor brasileiro)
-- **THEN** o cadastro é aceito, pois a chave `(ticker, mercado)` é distinta
+- **WHEN** o cliente cadastra `ticker: "IBM"` e `mercado: "BRASIL"`
+- **THEN** o sistema responde `409`, pois a unicidade de ticker é global, não por mercado
 
 ### Requirement: Precisão monetária e timezone da cotação
 O sistema SHALL armazenar `cotacaoAtual` usando `BigDecimal`, com escala e arredondamento explicitamente definidos em `design.md`, e NÃO SHALL usar `double` ou `float` para valores monetários. O sistema SHALL preservar o offset/timezone de `dataHoraCotacao` conforme a política documentada em `design.md`.
@@ -53,19 +53,14 @@ O sistema NÃO SHALL persistir uma ação parcialmente cadastrada. Se a consulta
 - **THEN** o sistema responde `502` ou `503` e nenhuma ação é persistida
 
 ### Requirement: Consulta de ações
-O sistema SHALL permitir listar ações com paginação, buscar uma ação por ID e buscar uma ação por ticker. Quando a busca por ticker for ambígua entre mercados diferentes, o sistema SHALL exigir o parâmetro de mercado.
+O sistema SHALL permitir listar ações com paginação, buscar uma ação por ID e buscar uma ação por ticker (sem necessidade de informar o mercado, já que o ticker é globalmente único).
 
 #### Scenario: Listagem paginada
 - **WHEN** o cliente chama `GET /acoes?page=0&size=20`
 - **THEN** o sistema responde `200` com uma página de ações e metadados de paginação
 
-#### Scenario: Busca por ticker existente em mais de um mercado
-- **GIVEN** o ticker `IBM` cadastrado tanto em `BRASIL` quanto em `ESTADOS_UNIDOS`
-- **WHEN** o cliente chama `GET /acoes/ticker/IBM` sem informar o mercado
-- **THEN** o sistema responde `400` solicitando o parâmetro `mercado`, ou retorna ambas as ocorrências de forma explícita, conforme decisão registrada em `design.md`
-
-#### Scenario: Busca por ticker com mercado informado
-- **WHEN** o cliente chama `GET /acoes/ticker/IBM?mercado=ESTADOS_UNIDOS`
+#### Scenario: Busca por ticker existente
+- **WHEN** o cliente chama `GET /acoes/ticker/PETR4`
 - **THEN** o sistema responde `200` com a ação correspondente, ou `404` caso não exista
 
 ### Requirement: Atualização sob demanda da cotação

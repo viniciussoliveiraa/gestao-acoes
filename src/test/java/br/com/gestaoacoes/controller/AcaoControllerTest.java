@@ -3,7 +3,6 @@ package br.com.gestaoacoes.controller;
 import br.com.gestaoacoes.exception.AcaoDuplicadaException;
 import br.com.gestaoacoes.exception.IntegracaoExternaIndisponivelException;
 import br.com.gestaoacoes.exception.RecursoNaoEncontradoException;
-import br.com.gestaoacoes.exception.TickerAmbiguoException;
 import br.com.gestaoacoes.exception.TickerNaoEncontradoException;
 import br.com.gestaoacoes.mapper.AcaoMapper;
 import br.com.gestaoacoes.model.Acao;
@@ -93,11 +92,19 @@ class AcaoControllerTest {
     }
 
     @Test
-    void buscarPorTickerAmbiguoRetorna400() throws Exception {
-        when(service.buscarPorTicker(anyString(), org.mockito.ArgumentMatchers.isNull()))
-                .thenThrow(new TickerAmbiguoException("ambíguo"));
+    void buscarPorTickerInexistenteRetorna404() throws Exception {
+        when(service.buscarPorTicker(anyString())).thenThrow(new RecursoNaoEncontradoException("não encontrada"));
 
-        mockMvc.perform(get("/acoes/ticker/IBM")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/acoes/ticker/ZZZZ9")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void buscarPorTickerComSucessoRetorna200() throws Exception {
+        when(service.buscarPorTicker(anyString())).thenReturn(mockAcao());
+
+        mockMvc.perform(get("/acoes/ticker/PETR4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ticker").value("PETR4"));
     }
 
     @Test
