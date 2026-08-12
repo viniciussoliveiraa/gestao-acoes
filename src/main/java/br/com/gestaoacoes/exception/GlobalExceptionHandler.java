@@ -5,6 +5,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -36,8 +37,22 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, "Registro duplicado: viola uma restrição de unicidade", request);
     }
 
+    /**
+     * Fallback genérico. Algumas exceções internas do Spring MVC que chegam aqui (rota
+     * inexistente, método HTTP não suportado, etc.) já implementam {@link ErrorResponse} e
+     * carregam o status/corpo corretos — nesse caso reaproveitamos o {@code ProblemDetail}
+     * delas em vez de mascarar tudo como 500.
+     */
     @ExceptionHandler(Exception.class)
-    public ProblemDetail handleUnexpected(HttpServletRequest request) {
+    public ProblemDetail handleUnexpected(Exception ex, HttpServletRequest request) {
+        if (ex instanceof ErrorResponse errorResponse) {
+            ProblemDetail problemDetail = errorResponse.getBody();
+            problemDetail.setProperty("timestamp", Instant.now());
+            if (problemDetail.getInstance() == null) {
+                problemDetail.setInstance(java.net.URI.create(request.getRequestURI()));
+            }
+            return problemDetail;
+        }
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno inesperado", request);
     }
 

@@ -47,7 +47,7 @@ public class CorretoraController {
         return mapper.toResponse(service.buscarPorId(id));
     }
 
-    @GetMapping("/cnpj/{cnpj}")
+    @GetMapping("/cnpj/{*cnpj}")
     public CorretoraResponse buscarPorCnpj(@PathVariable String cnpj) {
         return mapper.toResponse(service.buscarPorCnpj(cnpj));
     }

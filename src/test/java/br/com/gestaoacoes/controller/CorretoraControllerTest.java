@@ -108,6 +108,19 @@ class CorretoraControllerTest {
         mockMvc.perform(get("/corretoras?page=0&size=20")).andExpect(status().isOk());
     }
 
+    @Test
+    void buscarPorCnpjComMascaraContendoBarraFuncionaNaUrl() throws Exception {
+        when(service.buscarPorCnpj(anyString())).thenReturn(mockCorretora());
+
+        mockMvc.perform(get("/corretoras/cnpj/11.222.333/0001-81")).andExpect(status().isOk());
+    }
+
+    @Test
+    void rotaInexistenteRetorna404() throws Exception {
+        mockMvc.perform(get("/rota-totalmente-fora-de-qualquer-mapeamento"))
+                .andExpect(status().isNotFound());
+    }
+
     private Corretora mockCorretora() {
         return new Corretora("11222333000181", "Razao LTDA", "Fantasia", "contato@empresa.com", "1130000000",
                 "01310100", "Av. Paulista", "1000", null, "Bela Vista", "Sao Paulo", "SP", "ATIVA", true,

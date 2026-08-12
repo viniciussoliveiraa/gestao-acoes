@@ -43,13 +43,13 @@
 
 ## 7. Controllers e contratos REST
 
-- [x] 7.1 Implementar `CorretoraController`: `POST /corretoras`, `GET /corretoras`, `GET /corretoras/{id}`, `GET /corretoras/cnpj/{cnpj}`. Verificação: `@WebMvcTest` em 8.1 (após o handler global existir).
+- [x] 7.1 Implementar `CorretoraController`: `POST /corretoras`, `GET /corretoras`, `GET /corretoras/{id}`, `GET /corretoras/cnpj/{*cnpj}` (catch-all path variable — CNPJ mascarado contém `/`, que precisa capturar o restante do path; ver nota em `design.md`). Verificação: `@WebMvcTest` em 8.1 (após o handler global existir), validado também manualmente com a aplicação real rodando.
 - [x] 7.2 Implementar `AcaoController`: `POST /acoes`, `GET /acoes`, `GET /acoes/{id}`, `GET /acoes/ticker/{ticker}` (parâmetro `mercado` opcional), `PUT /acoes/{id}/atualizar-cotacao`. Verificação: `@WebMvcTest` em 8.1.
 - [x] 7.3 Garantir que nenhum controller chama adaptador de integração diretamente (apenas via service). Verificação: revisão de código — `CorretoraController`/`AcaoController` só importam `service`/`mapper`/`dto`/`model`, nenhuma dependência de `integration.*`.
 
 ## 8. Tratamento global de erros
 
-- [x] 8.1 Implementar `GlobalExceptionHandler` (`@RestControllerAdvice`) com `ProblemDetail` (RFC 9457) para `ApiException` (status por subtipo, ver tabela em `design.md`), `MethodArgumentNotValidException` (400, com lista de campos), `DataIntegrityViolationException` (409) e fallback genérico (500, sem stack trace). Verificação: `CorretoraControllerTest` (8 testes) e `AcaoControllerTest` (9 testes) cobrindo 200/201/400/404/409/422/502 via `MockMvc`.
+- [x] 8.1 Implementar `GlobalExceptionHandler` (`@RestControllerAdvice`) com `ProblemDetail` (RFC 9457) para `ApiException` (status por subtipo, ver tabela em `design.md`), `MethodArgumentNotValidException` (400, com lista de campos), `DataIntegrityViolationException` (409) e fallback genérico (500 apenas para erro de fato inesperado; exceções internas do Spring MVC que implementam `ErrorResponse`, como `NoResourceFoundException`, reaproveitam seu próprio `ProblemDetail` — bug encontrado em teste manual e corrigido, ver nota em `design.md`). Verificação: `CorretoraControllerTest` (10 testes, incluindo `rotaInexistenteRetorna404` e `buscarPorCnpjComMascaraContendoBarraFuncionaNaUrl`) e `AcaoControllerTest` (9 testes).
 - [x] 8.2 Adicionar `CorrelationIdFilter` (`OncePerRequestFilter`) gerando/propagando `X-Correlation-Id` via MDC, consumido pelo padrão de log em `application.yml` (`logging.pattern.correlation`). Nenhum adaptador loga CNPJ completo ou chave de API (mensagens de exceção usam apenas o ticker/CNPJ mascarado ou nenhum dado sensível — ver `BrasilApiCnpjAdapter.mascarar`). Verificação: revisão de código; nenhuma chamada a `log`/`System.out` com `token`, `apiKey` ou CNPJ completo.
 
 ## 9. Testes unitários, de contrato e integração
