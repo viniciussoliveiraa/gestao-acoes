@@ -31,3 +31,4 @@ Liga regras de negócio (RN) e requisitos das capacidades a endpoints, tarefas d
 | Documentação OpenAPI acessível | documentacao-observabilidade | `/swagger-ui.html`, `/v3/api-docs` | 10.1 | Verificado manualmente: app subida localmente, `GET /v3/api-docs` → 200 com todos os paths |
 | README reproduzível | documentacao-observabilidade | — | 10.2 | `README.md` revisado; comandos conferem com `pom.xml` e perfis reais |
 | Artefatos de apresentação (Postman, diagramas) | documentacao-observabilidade | — | 10.3, 10.4 | `postman/gestao-acoes.postman_collection.json` (JSON válido); `docs/diagramas.md` |
+| Banco de dados H2, MySQL e PostgreSQL (seção 6 do enunciado, todos obrigatórios) | — | — | 2.2, 2.3 | H2 (perfil `test`, suíte completa) e PostgreSQL (perfil `dev`, testado ao vivo) confirmados; MySQL (perfil `mysql`) validado via `MysqlMigrationSmokeTest` (H2 `MODE=MySQL`) — sem servidor MySQL real disponível para teste de ponta a ponta, ver limitação em `design.md` |

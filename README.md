@@ -23,8 +23,22 @@ API REST acadêmica para cadastro e consulta de corretoras e ações, com dados 
 |---|---|---|
 | `dev` (padrão) | PostgreSQL (`SPRING_DATASOURCE_URL`) | Execução local persistente |
 | `test` | H2 em memória (`MODE=PostgreSQL`) | Testes automatizados (ativado automaticamente pela suíte) |
+| `mysql` | MySQL (`SPRING_DATASOURCE_URL`) | Alternativa persistente, exigida pelo enunciado ("banco de dados deverá ser H2, MySQL e PostgreSQL") |
 
-O perfil ativo é controlado por `SPRING_PROFILES_ACTIVE` (padrão `dev`). O schema é criado/versionado por migrations Flyway (`src/main/resources/db/migration`) em ambos os perfis — nenhum perfil usa `ddl-auto=create`/`update`.
+O perfil ativo é controlado por `SPRING_PROFILES_ACTIVE`. O schema é criado/versionado por migrations Flyway — `dev`/`test` usam `src/main/resources/db/migration/postgresql` (H2 no perfil `test` roda em `MODE=PostgreSQL`, compatível com essa sintaxe); `mysql` usa `src/main/resources/db/migration/mysql`, com sintaxe própria (`AUTO_INCREMENT`, `DECIMAL`, `TIMESTAMP(6)`, `ENGINE=InnoDB`). Nenhum perfil usa `ddl-auto=create`/`update`.
+
+Para rodar com MySQL:
+```powershell
+# Crie o banco e o usuário primeiro (num cliente MySQL):
+# CREATE DATABASE gestao_acoes;
+# CREATE USER 'gestao_acoes'@'localhost' IDENTIFIED BY 'gestao_acoes';
+# GRANT ALL PRIVILEGES ON gestao_acoes.* TO 'gestao_acoes'@'localhost';
+
+$env:SPRING_PROFILES_ACTIVE = "mysql"
+./mvnw spring-boot:run
+```
+
+**Nota de honestidade**: o perfil `mysql` não foi validado contra um servidor MySQL real neste ambiente de desenvolvimento (não havia um disponível). A sintaxe das migrations e o mapeamento das entidades foram validados via `MysqlMigrationSmokeTest`, que roda H2 em modo de compatibilidade MySQL (`MODE=MySQL`) — uma aproximação razoável, mas não uma garantia absoluta de compatibilidade 100% com MySQL real. Se encontrar algum erro de schema ao rodar contra MySQL de verdade, é o primeiro lugar a investigar.
 
 ## Variáveis de ambiente
 

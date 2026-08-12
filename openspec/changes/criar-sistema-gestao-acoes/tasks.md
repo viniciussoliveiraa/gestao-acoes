@@ -7,8 +7,8 @@
 ## 2. Configuração, perfis e migrations
 
 - [x] 2.1 Criar `application.yml` base com placeholders de `BRASIL_API_BASE_URL`, `VIACEP_BASE_URL`, `BRAPI_BASE_URL`, `BRAPI_TOKEN`, `TWELVE_DATA_BASE_URL`, `TWELVE_DATA_API_KEY`, `ALPHA_VANTAGE_BASE_URL`, `ALPHA_VANTAGE_API_KEY`, `app.market-data.us-provider=twelve-data`. Verificação: nenhum valor secreto real no arquivo versionado (confirmado, só defaults públicos).
-- [x] 2.2 Criar perfil `test` (H2, ativado via `src/test/resources/application.properties`) e perfil `dev`/default (PostgreSQL, `ddl-auto=validate`). Verificação: `./mvnw test` usa H2 (confirmado no log: "The following 1 profile is active: test").
-- [x] 2.3 Criar migrations Flyway `V1__create_corretora.sql` e `V2__create_acao.sql` com as constraints de `design.md`. Verificação: `GestaoAcoesApplicationTests#contextLoads` passa e log confirma "Successfully applied 2 migrations to schema PUBLIC, now at version v2".
+- [x] 2.2 Criar perfil `test` (H2, ativado via `src/test/resources/application.properties`), perfil `dev`/default (PostgreSQL, `ddl-auto=validate`) e perfil `mysql` (MySQL, `ddl-auto=validate`) — os três exigidos pela seção 6 do enunciado. Verificação: `./mvnw test` usa H2 (confirmado no log); `dev` testado contra PostgreSQL real; `mysql` validado via `MysqlMigrationSmokeTest` (H2 em `MODE=MySQL`, sem servidor MySQL real disponível — ver nota em `design.md`).
+- [x] 2.3 Criar migrations Flyway `V1__create_corretora.sql`/`V2__create_acao.sql`/`V3__ticker_unicidade_global.sql` em `db/migration/postgresql` (compartilhado com H2) e `V1`/`V2` equivalentes em `db/migration/mysql` (sintaxe própria). Verificação: `GestaoAcoesApplicationTests#contextLoads` passa; migrations aplicadas com sucesso em PostgreSQL real e no smoke test MySQL.
 - [x] 2.4 Criar `.env.example` com todas as variáveis de 2.1, sem valores reais. Verificação: revisão manual, nenhum segredo.
 
 ## 3. Domínio, DTOs, mappers e validações
