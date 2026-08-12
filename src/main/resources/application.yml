@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: gestao-acoes
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/gestao_acoes}
+    username: ${SPRING_DATASOURCE_USERNAME:gestao_acoes}
+    password: ${SPRING_DATASOURCE_PASSWORD:gestao_acoes}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+
+app:
+  market-data:
+    us-provider: ${APP_MARKET_DATA_US_PROVIDER:twelve-data}
+  integrations:
+    brasil-api:
+      base-url: ${BRASIL_API_BASE_URL:https://brasilapi.com.br/api}
+    via-cep:
+      base-url: ${VIACEP_BASE_URL:https://viacep.com.br/ws}
+    brapi:
+      base-url: ${BRAPI_BASE_URL:https://brapi.dev}
+      token: ${BRAPI_TOKEN:}
+    twelve-data:
+      base-url: ${TWELVE_DATA_BASE_URL:https://api.twelvedata.com}
+      api-key: ${TWELVE_DATA_API_KEY:}
+    alpha-vantage:
+      base-url: ${ALPHA_VANTAGE_BASE_URL:https://www.alphavantage.co}
+      api-key: ${ALPHA_VANTAGE_API_KEY:}
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 3000
+        readTimeout: 5000
+        loggerLevel: basic
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  pattern:
+    correlation: "[%X{correlationId}] "
+  level:
+    br.com.gestaoacoes: INFO

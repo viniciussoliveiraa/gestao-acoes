@@ -1,0 +1,160 @@
+{
+  "info": {
+    "name": "Sistema de Gestão de Ações",
+    "description": "Coleção de exemplos para a API de gestão de corretoras e ações.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ],
+  "item": [
+    {
+      "name": "Corretoras",
+      "item": [
+        {
+          "name": "Cadastrar corretora (sucesso)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"11.222.333/0001-81\",\n  \"cep\": \"01310-100\",\n  \"numero\": \"1000\",\n  \"complemento\": \"Sala 1\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/corretoras", "host": ["{{baseUrl}}"], "path": ["corretoras"] }
+          }
+        },
+        {
+          "name": "Cadastrar corretora (CNPJ inválido -> 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cnpj\": \"11.222.333/0001-80\",\n  \"cep\": \"01310-100\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/corretoras", "host": ["{{baseUrl}}"], "path": ["corretoras"] }
+          }
+        },
+        {
+          "name": "Listar corretoras (paginado)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/corretoras?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["corretoras"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar corretora por ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/corretoras/1", "host": ["{{baseUrl}}"], "path": ["corretoras", "1"] }
+          }
+        },
+        {
+          "name": "Buscar corretora por CNPJ",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/corretoras/cnpj/11222333000181",
+              "host": ["{{baseUrl}}"],
+              "path": ["corretoras", "cnpj", "11222333000181"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ações",
+      "item": [
+        {
+          "name": "Cadastrar ação brasileira (sucesso)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticker\": \"PETR4\",\n  \"mercado\": \"BRASIL\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/acoes", "host": ["{{baseUrl}}"], "path": ["acoes"] }
+          }
+        },
+        {
+          "name": "Cadastrar ação americana (sucesso)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticker\": \"AAPL\",\n  \"mercado\": \"ESTADOS_UNIDOS\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/acoes", "host": ["{{baseUrl}}"], "path": ["acoes"] }
+          }
+        },
+        {
+          "name": "Cadastrar ação (ticker inexistente -> 404)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticker\": \"ZZZZ9\",\n  \"mercado\": \"BRASIL\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/acoes", "host": ["{{baseUrl}}"], "path": ["acoes"] }
+          }
+        },
+        {
+          "name": "Listar ações (paginado)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/acoes?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["acoes"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar ação por ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/acoes/1", "host": ["{{baseUrl}}"], "path": ["acoes", "1"] }
+          }
+        },
+        {
+          "name": "Buscar ação por ticker e mercado",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/acoes/ticker/PETR4?mercado=BRASIL",
+              "host": ["{{baseUrl}}"],
+              "path": ["acoes", "ticker", "PETR4"],
+              "query": [{ "key": "mercado", "value": "BRASIL" }]
+            }
+          }
+        },
+        {
+          "name": "Atualizar cotação de uma ação",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/acoes/1/atualizar-cotacao",
+              "host": ["{{baseUrl}}"],
+              "path": ["acoes", "1", "atualizar-cotacao"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
