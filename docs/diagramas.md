@@ -34,9 +34,45 @@ erDiagram
         varchar provedor_origem
         timestamptz criado_em
     }
+
+    USUARIO {
+        bigint id PK
+        varchar nome
+        varchar email UK
+        varchar senha_hash
+        timestamptz criado_em
+    }
+
+    LANCAMENTO {
+        bigint id PK
+        bigint usuario_id FK
+        bigint acao_id FK
+        bigint corretora_id FK
+        varchar tipo
+        numeric quantidade
+        numeric preco_unitario
+        date data_operacao
+        timestamptz criado_em
+    }
+
+    PROVENTO {
+        bigint id PK
+        bigint usuario_id FK
+        bigint acao_id FK
+        varchar tipo
+        numeric valor_total
+        date data_pagamento
+        timestamptz criado_em
+    }
+
+    USUARIO ||--o{ LANCAMENTO : registra
+    ACAO ||--o{ LANCAMENTO : "é comprada em"
+    CORRETORA ||--o{ LANCAMENTO : intermedia
+    USUARIO ||--o{ PROVENTO : recebe
+    ACAO ||--o{ PROVENTO : "paga"
 ```
 
-`Corretora` e `Acao` não têm relação direta no MVP (ver `proposal.md` — associação corretora/carteira/ação é diferencial futuro). Unicidade: `corretora.cnpj` é única; `(acao.ticker, acao.mercado)` é única em conjunto.
+`Corretora` e `Acao` são catálogos globais, sem dono — `Lancamento` e `Provento` são os pontos onde `Usuario` se associa a elas (ver `openspec/changes/adicionar-carteira-auth-frontend-angular/design.md`). Unicidade: `corretora.cnpj` única; `acao.ticker` única globalmente (RN07 — não por mercado); `usuario.email` única. `Posicao` (quantidade/preço médio/valor atual por ativo) não é uma tabela: é calculada em runtime agregando os `Lancamento` de cada usuário.
 
 ## Diagrama de componentes (portas e adaptadores)
 
@@ -78,3 +114,25 @@ flowchart LR
 ```
 
 Este é o mesmo diagrama de `openspec/changes/criar-sistema-gestao-acoes/design.md`, reproduzido aqui para consulta rápida sem precisar abrir os artefatos OpenSpec. Os fluxos de sequência (cadastro de corretora, cadastro/atualização de ação) estão detalhados em `design.md`.
+
+## Autenticação e carteira (frontend Angular)
+
+```mermaid
+flowchart LR
+  UI[Angular]
+  AuthC[AuthController]
+  CartC[CarteiraController]
+  ProvC[ProventoController]
+  JwtFilter[JwtAuthenticationFilter]
+  DB[(PostgreSQL/H2)]
+
+  UI -- "POST /auth/login" --> AuthC --> DB
+  AuthC -- token JWT --> UI
+  UI -- "Authorization: Bearer token" --> JwtFilter
+  JwtFilter -- usuarioId resolvido --> CartC
+  JwtFilter -- usuarioId resolvido --> ProvC
+  CartC --> DB
+  ProvC --> DB
+```
+
+`/corretoras` e `/acoes` continuam públicos e não passam pelo `JwtAuthenticationFilter` como exigência — o Angular os consome normalmente, com ou sem usuário logado. Detalhes em `openspec/changes/adicionar-carteira-auth-frontend-angular/design.md`.

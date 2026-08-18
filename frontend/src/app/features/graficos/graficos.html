@@ -1,0 +1,25 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-header__title"><mat-icon>pie_chart</mat-icon> Gráficos</h1>
+    <p class="page-header__subtitle">Alocação da carteira e evolução do valor investido</p>
+  </div>
+</div>
+
+@if (semDados()) {
+  <div class="empty-state surface-card">
+    <mat-icon>bar_chart</mat-icon>
+    <p>Cadastre lançamentos para visualizar os gráficos da sua carteira.</p>
+  </div>
+} @else {
+  <div class="graficos__grid">
+    <div class="surface-card graficos__card">
+      <h2 class="form-card__header"><mat-icon>donut_large</mat-icon> Alocação por ativo</h2>
+      <canvas baseChart [data]="alocacaoData()" [options]="alocacaoOptions" type="doughnut"></canvas>
+    </div>
+
+    <div class="surface-card graficos__card">
+      <h2 class="form-card__header"><mat-icon>show_chart</mat-icon> Evolução do valor investido</h2>
+      <canvas baseChart [data]="evolucaoData()" [options]="evolucaoOptions" type="line"></canvas>
+    </div>
+  </div>
+}

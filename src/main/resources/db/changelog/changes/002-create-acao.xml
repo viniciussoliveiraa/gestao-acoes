@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
+
+    <!-- uk_acao_ticker é global (RN07 do enunciado: "não será permitido cadastrar duas ações
+         com o mesmo ticker"), não por (ticker, mercado). -->
+    <changeSet id="002-create-acao-postgres" author="gestao-acoes" context="postgres-h2">
+        <createTable tableName="acao">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="ticker" type="VARCHAR(20)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_acao_ticker"/>
+            </column>
+            <column name="nome_empresa" type="VARCHAR(255)"/>
+            <column name="mercado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="moeda" type="VARCHAR(3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cotacao_atual" type="NUMERIC(19,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_hora_cotacao" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provedor_origem" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="criado_em" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="acao"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-create-acao-mysql" author="gestao-acoes" context="mysql">
+        <createTable tableName="acao">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="ticker" type="VARCHAR(20)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_acao_ticker"/>
+            </column>
+            <column name="nome_empresa" type="VARCHAR(255)"/>
+            <column name="mercado" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="moeda" type="VARCHAR(3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cotacao_atual" type="DECIMAL(19,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_hora_cotacao" type="TIMESTAMP(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provedor_origem" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="criado_em" type="TIMESTAMP(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="acao"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

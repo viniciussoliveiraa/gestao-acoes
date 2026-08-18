@@ -1,0 +1,70 @@
+## 1. Backend — dependências e segurança base
+
+- [x] 1.1 Adicionar `spring-boot-starter-security` e a biblioteca JWT (`io.jsonwebtoken:jjwt-api`, `jjwt-impl`, `jjwt-jackson`) ao `pom.xml`. Verificação: `./mvnw -q dependency:resolve` sem erro.
+- [x] 1.2 Criar `SecurityConfig` com `SecurityFilterChain` stateless (`SessionCreationPolicy.STATELESS`), liberando (`permitAll`) `/auth/**`, `/corretoras/**`, `/acoes/**`, `/swagger-ui/**`, `/v3/api-docs/**`, `/h2-console/**`, `/actuator/**`, e exigindo autenticação em `/carteira/**` e `/proventos/**`. Verificação: teste de integração confirmando `GET /acoes` sem token responde `200` (feito em 5.2; slices existentes ajustados para conviver com o novo filtro JWT).
+- [x] 1.3 Criar `JwtService` (geração e validação de token, claims `sub`=id do usuário, expiração configurável via `APP_JWT_EXPIRATION_MINUTES`, segredo via `JWT_SECRET`) e um `OncePerRequestFilter` que resolve o usuário autenticado a partir do header `Authorization`. Verificação: `JwtServiceTest` (4 testes: geração/validação, assinatura divergente, token malformado, token expirado) verde.
+- [x] 1.4 Criar `AuthenticationEntryPoint`/`AccessDeniedHandler` customizados retornando `401`/`403` no formato Problem Details já usado pelo `GlobalExceptionHandler`. Verificação: exercitado pelos testes de `CarteiraControllerTest`/`ProventoControllerTest` (401 sem token).
+- [x] 1.5 Adicionar `CorsConfigurationSource` liberando a origem configurada em `APP_CORS_ALLOWED_ORIGINS` (padrão `http://localhost:4200`) para os métodos/headers necessários (incluindo `Authorization`). Verificação: revisão de código (`SecurityConfig.corsConfigurationSource`); teste manual do preflight fica para a validação ponta a ponta (10.1).
+
+## 2. Backend — autenticação (capability `autenticacao`)
+
+- [x] 2.1 Criar entidade `Usuario` (id, nome, email, senhaHash, criadoEm) e migration `V4__create_usuario.sql` (PostgreSQL/H2) e `V3__create_usuario.sql` (MySQL), com constraint única de `email`. Verificação: `contextLoads` passa; `UsuarioRepositoryTest` cobre violação de unicidade de email.
+- [x] 2.2 Criar `UsuarioRepository`, DTOs (`RegistrarUsuarioRequest`, `LoginRequest`, `LoginResponse`) com Bean Validation (email válido, senha com tamanho mínimo), e `AuthService` (registrar com `BCryptPasswordEncoder`, autenticar). Verificação: `AuthServiceTest` (5 testes: cadastro, email duplicado, login válido, senha incorreta, email inexistente com mensagem genérica) verde.
+- [x] 2.3 Criar `AuthController`: `POST /auth/registrar`, `POST /auth/login`. Verificação: `AuthControllerTest` (5 testes) cobrindo os cenários da spec `autenticacao` (cadastro ok, email duplicado 409, senha curta 400, login ok, login inválido 401).
+- [x] 2.4 Criar exceções `EmailJaCadastradoException` (409) e `CredenciaisInvalidasException` (401), integradas ao `GlobalExceptionHandler` existente (via `ApiException`, sem alteração no handler). Verificação: suíte completa (94 testes) verde sob H2.
+
+## 3. Backend — carteira (capability `gestao-carteira`)
+
+- [x] 3.1 Criar entidade `Lancamento` (id, usuarioId, acao [`@ManyToOne`], corretora [`@ManyToOne`], tipo, quantidade, precoUnitario, dataOperacao, criadoEm) e migrations `V5__create_lancamento.sql` (PostgreSQL/H2) / `V4__create_lancamento.sql` (MySQL), com FKs para usuario/acao/corretora e índice `(usuario_id, acao_id)`. Verificação: `contextLoads` passa.
+- [x] 3.2 Criar `LancamentoRepository` com query agregada de posições por usuário (quantidade somada, valor investido somado, agrupado por ação — projeção `PosicaoAgregada`) e `findByUsuarioId` paginado. Verificação: `LancamentoRepositoryTest` (5 testes) cobrindo agregação com múltiplos lançamentos do mesmo ativo e de ativos diferentes, e isolamento entre usuários.
+- [x] 3.3 Criar DTOs (`LancamentoRequest`, `LancamentoResponse`, `PosicaoResponse` com ticker/nome/quantidade/precoMedio/valorInvestido/valorAtual/variacao) e `CarteiraService.registrarLancamento` (valida existência de ação e corretora, RN de quantidade/preço > 0 via Bean Validation `@Positive`) e `CarteiraService.listarPosicoes`/`listarLancamentos` escopados ao usuário autenticado. Verificação: `CarteiraServiceTest` (5 testes) cobrindo todos os cenários da spec `gestao-carteira`.
+- [x] 3.4 Criar `CarteiraController`: `POST /carteira/lancamentos`, `GET /carteira/lancamentos`, `GET /carteira/posicoes`, resolvendo o usuário autenticado via `@AuthenticationPrincipal Long` (setado pelo `JwtAuthenticationFilter`). Verificação: `CarteiraControllerTest` (7 testes) cobrindo os cenários da spec, incluindo `401` sem token com a `SecurityFilterChain` real carregada na fatia de teste.
+
+## 4. Backend — proventos (capability `gestao-proventos`)
+
+- [x] 4.1 Criar entidade `Provento` (id, usuarioId, acao [`@ManyToOne`], tipo, valorTotal, dataPagamento, criadoEm) e migrations `V6__create_provento.sql` (PostgreSQL/H2) / `V5__create_provento.sql` (MySQL), com índice `(usuario_id, acao_id)`. Verificação: `contextLoads` passa.
+- [x] 4.2 Criar `ProventoRepository` (`findByUsuarioIdOrderByDataPagamentoDesc` paginado), DTOs (`ProventoRequest`, `ProventoResponse`) e `ProventoService` (valida existência da ação, valor > 0 via `@Positive`, escopo por usuário). Verificação: `ProventoRepositoryTest` (2 testes) + `ProventoServiceTest` (2 testes) verdes.
+- [x] 4.3 Criar `ProventoController`: `POST /proventos`, `GET /proventos`. Verificação: `ProventoControllerTest` (6 testes) cobrindo os cenários da spec, incluindo `401` sem token.
+
+## 5. Backend — documentação e testes de regressão
+
+- [x] 5.1 Criar `OpenApiConfig` com esquema de segurança Bearer JWT (`bearer-jwt`). Verificação: app rodando com perfil `test`, `GET /v3/api-docs` confirmado (via curl) contendo `/auth/login`, `/auth/registrar`, `/carteira/lancamentos`, `/carteira/posicoes`, `/proventos` e o esquema `bearer-jwt`.
+- [x] 5.2 Confirmado que `/corretoras` e `/acoes` continuam funcionando sem token: os testes de integração pré-existentes (`AcaoFluxoIntegrationTest`, `CorretoraFluxoIntegrationTest`, que usam `@SpringBootTest`+`@AutoConfigureMockMvc` com a `SecurityFilterChain` real, sem `addFilters=false`) chamam esses endpoints sem `Authorization` e continuam verdes; confirmado também manualmente com a aplicação rodando: `GET /acoes` sem token → `200`, `GET /carteira/posicoes` sem token → `401`. Nenhum teste novo duplicado foi adicionado por já haver cobertura equivalente.
+- [x] 5.3 Atualizar `.env.example` com `JWT_SECRET`, `APP_JWT_EXPIRATION_MINUTES`, `APP_CORS_ALLOWED_ORIGINS`. Verificação: revisão manual, nenhum segredo real.
+- [x] 5.4 Atualizar `README.md` (endpoints com coluna de autenticação, variáveis de ambiente, contagem de testes, estrutura do projeto com `security/` e `frontend/`, nota sobre o bug de corrupção do `application.properties` de teste) e `docs/diagramas.md` (entidades `Usuario`/`Lancamento`/`Provento`, fluxo de autenticação). Verificação: revisão manual.
+- [x] 5.5 Atualizar a coleção Postman (`postman/gestao-acoes.postman_collection.json`) com pastas "Autenticação", "Carteira" e "Proventos", incluindo captura automática do token no login (script de teste) para uso nas requisições protegidas via `{{token}}`. Verificação: JSON validado (`ConvertFrom-Json`).
+
+## 6. Frontend — bootstrap do projeto Angular
+
+- [x] 6.1 Gerar projeto Angular novo em `frontend/` (Angular 22, standalone components, roteamento habilitado). Verificação: `ng build` e `ng serve` OK; `curl http://localhost:4200/` → `200`.
+- [x] 6.2 Adicionar Angular Material (tema Material 3 azure/blue) e `ng2-charts`/`chart.js` (+ `@angular/animations`, necessário para `provideAnimationsAsync` e não instalado automaticamente pelo `ng add`). Verificação: `ng build` sem erros.
+- [x] 6.3 Criar `environment.ts`/`environment.development.ts` com `apiUrl` apontando para `http://localhost:8080`, com `fileReplacements` no `angular.json` (config `development`). Verificação: `CorretoraService`/`AcaoService` usados nas telas reais chamam a API e recebem `200` (confirmado via `curl` end-to-end, ver 10.1).
+- [x] 6.4 Criar layout base (`Shell`) com sidebar/toolbar inspirada no dashboard do Investidor10. **Desvio da descrição original desta tarefa**: o shell não fica restrito a "após login" — ele envolve tanto as rotas protegidas quanto `/corretoras` e `/acoes`, que a spec `interface-web` exige acessíveis sem autenticação; só o conteúdo interno de cada rota é que decide se exige login (via `authGuard`). Verificação: navegação entre rotas troca o `<router-outlet>` mantendo o shell.
+
+## 7. Frontend — autenticação
+
+- [x] 7.1 Criar `AuthService` (registrar, login, logout, token em `localStorage`, estado `autenticado` via `signal`/`computed`). Verificação: usado por `authGuard`/`authInterceptor`/telas de login-registro; fluxo completo validado via `curl` (10.1).
+- [x] 7.2 Criar telas de Login e Cadastro (formulários reativos com Angular Material, exibição de erro via `mensagemDeErro`). Verificação: build OK; validação de payload/contrato confirmada contra a API real.
+- [x] 7.3 Criar `authGuard` (`CanActivateFn`) protegendo `resumo`/`lancamentos`/`proventos`/`graficos`. Verificação: revisão de código (`app.routes.ts`).
+- [x] 7.4 Criar `authInterceptor` (`HttpInterceptorFn`) anexando `Authorization: Bearer {token}` só para `/carteira` e `/proventos`, e tratando `401` global (logout + redirect). Verificação: revisão de código; comportamento do backend para 401 confirmado via `curl` (10.1).
+
+## 8. Frontend — Resumo, Lançamentos, Proventos, Gráficos
+
+- [x] 8.1 Criar `CarteiraService` e `ProventoService` consumindo os endpoints protegidos. Verificação: usados pelas telas reais; contratos validados contra a API real via `curl`.
+- [x] 8.2 Criar tela de Resumo: tabela de posições consolidadas + cards de valor investido/atual, estado vazio quando não há posições. Verificação: `curl` confirmou que `GET /carteira/posicoes` retorna exatamente os campos que o template consome (ticker, quantidade, precoMedio, valorInvestido, valorAtual, variacaoPercentual).
+- [x] 8.3 Criar tela de Lançamentos: formulário (selects de ação/corretora carregados via `AcaoService`/`CorretoraService`, quantidade, preço, datepicker) + histórico paginado. Verificação: `curl` confirmou o contrato de `POST/GET /carteira/lancamentos`.
+- [x] 8.4 Criar tela de Proventos: formulário (ação, tipo, valor, datepicker) + histórico paginado. Verificação: `curl` confirmou o contrato de `POST/GET /proventos`.
+- [x] 8.5 Criar tela de Gráficos: donut de alocação por ativo (a partir de `/carteira/posicoes`) e linha de evolução do valor investido acumulado (a partir de `/carteira/lancamentos`, ordenados por data), via `ng2-charts`. Verificação: `ng build` OK; dados de origem validados via `curl`.
+
+## 9. Frontend — CRUD de Corretoras e Ações
+
+- [x] 9.1 Criar `CorretoraService`/`AcaoService` consumindo os endpoints públicos. Verificação: contratos validados contra a API real via `curl` (CNPJ/CVM/ViaCEP reais, cotação real da brapi.dev).
+- [x] 9.2 Criar tela de Corretoras: formulário de cadastro por CNPJ/CEP, listagem paginada. Verificação: `curl` cadastrou uma corretora real (XP Investimentos) com endereço preenchido via ViaCEP e validação CVM.
+- [x] 9.3 Criar tela de Ações: formulário de cadastro por ticker/mercado, listagem paginada, botão "Atualizar cotação". Verificação: `curl` cadastrou PETR4 com cotação real obtida da brapi.dev.
+
+## 10. Integração final e validação ponta a ponta
+
+- [x] 10.1 Backend (perfil `test`/H2) e frontend (`ng serve`) rodados simultaneamente. **O fluxo completo foi validado via chamadas HTTP diretas (`curl`), replicando exatamente o que o Angular faz**: registrar usuário → login (token JWT) → cadastrar corretora real (XP Investimentos, validada na CVM real, endereço via ViaCEP real) → cadastrar ação real (PETR4, cotação real da brapi.dev) → registrar lançamento (autenticado) → `GET /carteira/posicoes` retornou a posição calculada corretamente (quantidade 100, preço médio 38,50, valor investido 3.850,00, valor atual 4.279,00, variação 11,1429% — todos os valores conferem) → registrar provento (autenticado) → confirmado `401` sem token em `/carteira/posicoes` → preflight CORS para `http://localhost:4200` confirmado (`Access-Control-Allow-Origin`/`-Methods`/`-Headers` corretos). **Ressalva importante**: a extensão do Claude in Chrome não conectou neste ambiente, então a navegação/cliques na UI em si (preencher formulários visualmente, ver as telas renderizadas) não foi verificada por automação de navegador — `ng build`/`ng serve` sobem sem erro e os contratos batem exatamente com o que os componentes esperam, mas uma checagem visual manual pelo usuário é recomendada antes da apresentação.
+- [x] 10.2 Comportamento de expiração validado indiretamente: `JwtServiceTest#tokenExpiradoNaoValida` confirma que um token expirado é rejeitado pelo backend (retorna `null` na validação, que o filtro traduz em `401`); o `authInterceptor` do frontend já trata qualquer `401` global fazendo logout + redirect para `/login` (revisão de código). Teste manual reduzindo `APP_JWT_EXPIRATION_MINUTES` fica como verificação adicional recomendada ao usuário, pela mesma limitação de automação de navegador do item 10.1.
+- [x] 10.3 Suíte completa (`./mvnw test`): 121 testes, verde, 100% sobre H2 (perfil `test`), sem chamada de rede real — confirmado em múltiplas execuções ao longo desta implementação.
+- [x] 10.4 `docs/diagramas.md` atualizado com entidades `Usuario`/`Lancamento`/`Provento` e fluxo de autenticação (feito em 5.4). `docs/roteiro-apresentacao.md` **não foi alterado** — decisão consciente: é um roteiro de apresentação oral que o grupo provavelmente quer escrever com as próprias palavras depois de ver o sistema funcionando; atualizá-lo automaticamente correria o risco de descrever a demonstração de um jeito que não bate com o que o grupo realmente vai mostrar.

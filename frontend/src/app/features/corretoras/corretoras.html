@@ -1,0 +1,102 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-header__title"><mat-icon>account_balance</mat-icon> Corretoras</h1>
+    <p class="page-header__subtitle">Cadastro validado por CNPJ, CVM e CEP — não exige login</p>
+  </div>
+</div>
+
+<div class="surface-card form-card">
+  <h2 class="form-card__header"><mat-icon>add_circle</mat-icon> Nova corretora</h2>
+
+  <form [formGroup]="form" (ngSubmit)="submeter()" class="corretoras__form">
+    <mat-form-field appearance="outline">
+      <mat-label>CNPJ</mat-label>
+      <input matInput formControlName="cnpj" placeholder="00.000.000/0000-00" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>CEP</mat-label>
+      <input matInput formControlName="cep" placeholder="00000-000" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Número</mat-label>
+      <input matInput formControlName="numero" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Complemento</mat-label>
+      <input matInput formControlName="complemento" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Email</mat-label>
+      <input matInput type="email" formControlName="email" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Telefone</mat-label>
+      <input matInput formControlName="telefone" />
+    </mat-form-field>
+
+    @if (erro()) {
+      <p class="form-feedback--erro">{{ erro() }}</p>
+    }
+    @if (sucesso()) {
+      <p class="form-feedback--sucesso">{{ sucesso() }}</p>
+    }
+
+    <button mat-flat-button color="primary" type="submit" [disabled]="enviando()">
+      @if (enviando()) {
+        <mat-progress-spinner diameter="20" mode="indeterminate" />
+      } @else {
+        Cadastrar corretora
+      }
+    </button>
+  </form>
+</div>
+
+<h2 class="section-title">Corretoras cadastradas</h2>
+
+@if (corretoras().length === 0) {
+  <div class="empty-state surface-card">
+    <mat-icon>account_balance</mat-icon>
+    <p>Nenhuma corretora cadastrada ainda.</p>
+  </div>
+} @else {
+  <div class="data-table-wrapper">
+    <table mat-table [dataSource]="corretoras()">
+      <ng-container matColumnDef="razaoSocial">
+        <th mat-header-cell *matHeaderCellDef>Razão social</th>
+        <td mat-cell *matCellDef="let c">{{ c.razaoSocial }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="cnpj">
+        <th mat-header-cell *matHeaderCellDef>CNPJ</th>
+        <td mat-cell *matCellDef="let c">{{ c.cnpj }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="cidade">
+        <th mat-header-cell *matHeaderCellDef>Cidade</th>
+        <td mat-cell *matCellDef="let c">{{ c.cidade }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="uf">
+        <th mat-header-cell *matHeaderCellDef>UF</th>
+        <td mat-cell *matCellDef="let c">{{ c.uf }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="validadaCvm">
+        <th mat-header-cell *matHeaderCellDef>Validada CVM</th>
+        <td mat-cell *matCellDef="let c">
+          <span class="trend" [class.trend--positive]="c.validadaCvm" [class.trend--negative]="!c.validadaCvm">
+            {{ c.validadaCvm ? 'Sim' : 'Não' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="colunas"></tr>
+      <tr mat-row *matRowDef="let row; columns: colunas"></tr>
+    </table>
+  </div>
+}

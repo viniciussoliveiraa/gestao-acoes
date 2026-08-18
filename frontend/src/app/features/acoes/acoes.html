@@ -1,0 +1,91 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-header__title"><mat-icon>trending_up</mat-icon> Ações</h1>
+    <p class="page-header__subtitle">Cotação em tempo real via brapi.dev / Twelve Data — não exige login</p>
+  </div>
+</div>
+
+<div class="surface-card form-card">
+  <h2 class="form-card__header"><mat-icon>add_circle</mat-icon> Nova ação</h2>
+
+  <form [formGroup]="form" (ngSubmit)="submeter()" class="acoes__form">
+    <mat-form-field appearance="outline">
+      <mat-label>Ticker</mat-label>
+      <input matInput formControlName="ticker" placeholder="PETR4" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Mercado</mat-label>
+      <mat-select formControlName="mercado">
+        @for (mercado of mercados; track mercado) {
+          <mat-option [value]="mercado">{{ mercado }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (erro()) {
+      <p class="form-feedback--erro">{{ erro() }}</p>
+    }
+    @if (sucesso()) {
+      <p class="form-feedback--sucesso">{{ sucesso() }}</p>
+    }
+
+    <button mat-flat-button color="primary" type="submit" [disabled]="enviando()">
+      @if (enviando()) {
+        <mat-progress-spinner diameter="20" mode="indeterminate" />
+      } @else {
+        Cadastrar ação
+      }
+    </button>
+  </form>
+</div>
+
+<h2 class="section-title">Ações cadastradas</h2>
+
+@if (acoes().length === 0) {
+  <div class="empty-state surface-card">
+    <mat-icon>trending_up</mat-icon>
+    <p>Nenhuma ação cadastrada ainda.</p>
+  </div>
+} @else {
+  <div class="data-table-wrapper">
+    <table mat-table [dataSource]="acoes()">
+      <ng-container matColumnDef="ticker">
+        <th mat-header-cell *matHeaderCellDef>Ticker</th>
+        <td mat-cell *matCellDef="let a">
+          <strong>{{ a.ticker }}</strong>
+          <div class="acoes__nome-empresa">{{ a.nomeEmpresa }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="mercado">
+        <th mat-header-cell *matHeaderCellDef>Mercado</th>
+        <td mat-cell *matCellDef="let a">{{ a.mercado }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="cotacaoAtual">
+        <th mat-header-cell *matHeaderCellDef>Cotação</th>
+        <td mat-cell *matCellDef="let a">{{ a.cotacaoAtual | currency: a.moeda }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="acoes">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let a">
+          <button
+            mat-stroked-button
+            type="button"
+            color="primary"
+            [disabled]="atualizandoId() === a.id"
+            (click)="atualizarCotacao(a)"
+          >
+            <mat-icon>refresh</mat-icon>
+            Atualizar cotação
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="colunas"></tr>
+      <tr mat-row *matRowDef="let row; columns: colunas"></tr>
+    </table>
+  </div>
+}

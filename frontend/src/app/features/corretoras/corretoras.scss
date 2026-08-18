@@ -1,0 +1,16 @@
+.corretoras__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.corretoras__form mat-form-field {
+  flex: 1 1 200px;
+}
+
+.corretoras__form button {
+  height: 44px;
+  margin-top: 4px;
+  font-weight: 600;
+}

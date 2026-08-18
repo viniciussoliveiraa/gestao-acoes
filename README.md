@@ -1,6 +1,8 @@
 # Sistema de Gestão de Ações
 
-API REST acadêmica para cadastro e consulta de corretoras e ações, com dados validados/enriquecidos por integrações externas reais (CNPJ, CEP, cotações BR/US). Desenvolvida com Specification-Driven Development via [OpenSpec](https://github.com/Fission-AI/OpenSpec) — a especificação completa (proposta, specs por capacidade, design técnico e plano de tarefas) está em `openspec/changes/criar-sistema-gestao-acoes/`.
+API REST acadêmica para cadastro e consulta de corretoras e ações, com dados validados/enriquecidos por integrações externas reais (CNPJ, CEP, cotações BR/US), autenticação de usuário e gestão de carteira (lançamentos, posições e proventos). Desenvolvida com Specification-Driven Development via [OpenSpec](https://github.com/Fission-AI/OpenSpec) — a especificação completa (proposta, specs por capacidade, design técnico e plano de tarefas) está em `openspec/changes/criar-sistema-gestao-acoes/` (MVP original) e `openspec/changes/adicionar-carteira-auth-frontend-angular/` (autenticação, carteira, proventos e frontend Angular).
+
+Um frontend Angular consome esta API — ver [`frontend/README.md`](frontend/README.md) para instruções de execução.
 
 ## Pré-requisitos
 
@@ -25,7 +27,7 @@ API REST acadêmica para cadastro e consulta de corretoras e ações, com dados 
 | `test` | H2 em memória (`MODE=PostgreSQL`) | Testes automatizados (ativado automaticamente pela suíte) |
 | `mysql` | MySQL (`SPRING_DATASOURCE_URL`) | Alternativa persistente, exigida pelo enunciado ("banco de dados deverá ser H2, MySQL e PostgreSQL") |
 
-O perfil ativo é controlado por `SPRING_PROFILES_ACTIVE`. O schema é criado/versionado por migrations Flyway — `dev`/`test` usam `src/main/resources/db/migration/postgresql` (H2 no perfil `test` roda em `MODE=PostgreSQL`, compatível com essa sintaxe); `mysql` usa `src/main/resources/db/migration/mysql`, com sintaxe própria (`AUTO_INCREMENT`, `DECIMAL`, `TIMESTAMP(6)`, `ENGINE=InnoDB`). Nenhum perfil usa `ddl-auto=create`/`update`.
+O perfil ativo é controlado por `SPRING_PROFILES_ACTIVE`. O schema é criado/versionado por um único changelog Liquibase (`src/main/resources/db/changelog/db.changelog-master.xml`, incluindo os changesets em `changes/`) — cada changeset tem uma variante para PostgreSQL/H2 (`context=postgres-h2`, com `TIMESTAMP WITH TIME ZONE`) e outra para MySQL (`context=mysql`, com `TIMESTAMP(6)`/`DECIMAL`, sem suporte a timezone), selecionadas por `spring.liquibase.contexts` em cada `application-*.yml`. Nenhum perfil usa `ddl-auto=create`/`update`.
 
 Para rodar com MySQL:
 ```powershell
@@ -46,13 +48,16 @@ Ver `.env.example` para a lista completa. Resumo:
 
 | Variável | Obrigatória | Descrição |
 |---|---|---|
-| `SPRING_DATASOURCE_URL`, `_USERNAME`, `_PASSWORD` | Sim (perfil `dev`) | Conexão PostgreSQL |
+| `SPRING_DATASOURCE_URL`, `_USERNAME`, `_PASSWORD` | Sim (perfis `dev` e `mysql`) | Conexão com o banco. `_PASSWORD` **não tem valor padrão** — a aplicação falha ao subir se não for definida, de propósito: não deve iniciar silenciosamente com uma senha conhecida por todos |
 | `APP_MARKET_DATA_US_PROVIDER` | Não (padrão `twelve-data`) | `twelve-data` ou `alpha-vantage` |
 | `BRASIL_API_BASE_URL` | Não (tem padrão público) | Dados de CNPJ e validação CVM |
 | `VIACEP_BASE_URL` | Não (tem padrão público) | Consulta de CEP |
 | `BRAPI_BASE_URL`, `BRAPI_TOKEN` | Token opcional para os tickers `PETR4`, `MGLU3`, `VALE3`, `ITUB4`; obrigatório para os demais | Cotações do mercado brasileiro |
 | `TWELVE_DATA_BASE_URL`, `TWELVE_DATA_API_KEY` | Chave obrigatória se `us-provider=twelve-data` | Cotações do mercado americano |
 | `ALPHA_VANTAGE_BASE_URL`, `ALPHA_VANTAGE_API_KEY` | Chave obrigatória se `us-provider=alpha-vantage` | Cotações do mercado americano (alternativa) |
+| `JWT_SECRET` | Não (tem padrão só para dev — troque em qualquer ambiente real) | Segredo de assinatura dos tokens JWT (login) |
+| `APP_JWT_EXPIRATION_MINUTES` | Não (padrão `120`) | Validade do token JWT |
+| `APP_CORS_ALLOWED_ORIGINS` | Não (padrão `http://localhost:4200`) | Origem(ns) liberada(s) para o frontend Angular |
 
 Nenhuma chave real está versionada no repositório; `.env.example` contém apenas placeholders.
 
@@ -68,29 +73,50 @@ Nenhuma chave real está versionada no repositório; `.env.example` contém apen
 
 Após subir, a documentação interativa fica disponível em `http://localhost:8080/swagger-ui.html` e o OpenAPI JSON em `http://localhost:8080/v3/api-docs`.
 
+Para usar a interface (não apenas a API), rode o frontend Angular em paralelo — outro terminal, outra porta:
+
+```bash
+cd frontend
+npm install
+npm start   # http://localhost:4200
+```
+
+Ver `frontend/README.md` para detalhes.
+
 ## Executando os testes
 
 ```bash
 ./mvnw test
 ```
 
-A suíte completa (74 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor.
+A suíte completa (121 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor. As fatias `@WebMvcTest` de `/carteira` e `/proventos` carregam a `SecurityFilterChain` real para exercitar `401` sem token; as demais desligam os filtros de servlet (`addFilters = false`) por testarem endpoints públicos.
+
+**Nota de ambiente**: o perfil de testes é fixado por `src/test/resources/application.properties` (`spring.profiles.active=test`). Se os testes começarem a conectar em um PostgreSQL local em vez do H2 em memória, confira esse arquivo — algum editor pode corrompê-lo (ex.: autocomplete inserindo uma quebra de linha no meio de `spring.profiles.active`).
 
 ## Endpoints principais
 
-| Método | Caminho | Descrição |
-|---|---|---|
-| `POST` | `/corretoras` | Cadastra corretora (CNPJ validado + enriquecido via BrasilAPI, validado na CVM, endereço via ViaCEP) |
-| `GET` | `/corretoras` | Lista corretoras (paginado) |
-| `GET` | `/corretoras/{id}` | Busca corretora por ID |
-| `GET` | `/corretoras/cnpj/{cnpj}` | Busca corretora por CNPJ (com ou sem máscara) |
-| `POST` | `/acoes` | Cadastra ação (ticker validado e cotação obtida do provedor do mercado) |
-| `GET` | `/acoes` | Lista ações (paginado) |
-| `GET` | `/acoes/{id}` | Busca ação por ID |
-| `GET` | `/acoes/ticker/{ticker}` | Busca ação por ticker (globalmente único — RN07) |
-| `PUT` | `/acoes/{id}/atualizar-cotacao` | Atualiza a cotação de uma ação já cadastrada |
+| Método | Caminho | Autenticação | Descrição |
+|---|---|---|---|
+| `POST` | `/corretoras` | Não | Cadastra corretora (CNPJ validado + enriquecido via BrasilAPI, validado na CVM, endereço via ViaCEP) |
+| `GET` | `/corretoras` | Não | Lista corretoras (paginado) |
+| `GET` | `/corretoras/{id}` | Não | Busca corretora por ID |
+| `GET` | `/corretoras/cnpj/{cnpj}` | Não | Busca corretora por CNPJ (com ou sem máscara) |
+| `POST` | `/acoes` | Não | Cadastra ação (ticker validado e cotação obtida do provedor do mercado) |
+| `GET` | `/acoes` | Não | Lista ações (paginado) |
+| `GET` | `/acoes/{id}` | Não | Busca ação por ID |
+| `GET` | `/acoes/ticker/{ticker}` | Não | Busca ação por ticker (globalmente único — RN07) |
+| `PUT` | `/acoes/{id}/atualizar-cotacao` | Não | Atualiza a cotação de uma ação já cadastrada |
+| `POST` | `/auth/registrar` | Não | Cadastra usuário (nome, email, senha) |
+| `POST` | `/auth/login` | Não | Autentica e retorna um token JWT |
+| `POST` | `/carteira/lancamentos` | **Sim** (Bearer JWT) | Registra uma compra/aporte (ação, corretora, quantidade, preço, data) |
+| `GET` | `/carteira/lancamentos` | **Sim** | Lista os lançamentos do usuário autenticado (paginado) |
+| `GET` | `/carteira/posicoes` | **Sim** | Posições consolidadas por ativo (quantidade, preço médio, valor investido/atual, variação) |
+| `POST` | `/proventos` | **Sim** | Registra um provento (dividendo/JCP) recebido |
+| `GET` | `/proventos` | **Sim** | Lista os proventos do usuário autenticado (paginado, mais recente primeiro) |
 
-Payloads, exemplos de sucesso/erro e todos os códigos HTTP estão documentados no Swagger UI e na spec `openspec/changes/criar-sistema-gestao-acoes/specs/gestao-corretoras` / `gestao-acoes`. Uma coleção Postman com exemplos prontos está em `postman/gestao-acoes.postman_collection.json`.
+Os endpoints de corretoras e ações permanecem públicos (sem exigir login) — só carteira e proventos exigem `Authorization: Bearer {token}` obtido em `/auth/login`. Ver a decisão registrada em `openspec/changes/adicionar-carteira-auth-frontend-angular/design.md`.
+
+Payloads, exemplos de sucesso/erro e todos os códigos HTTP estão documentados no Swagger UI (botão "Authorize" para informar o token JWT) e nas specs em `openspec/changes/criar-sistema-gestao-acoes/specs/` e `openspec/changes/adicionar-carteira-auth-frontend-angular/specs/`. Uma coleção Postman com exemplos prontos está em `postman/gestao-acoes.postman_collection.json`.
 
 ## Integrações externas — limitações e observações (verificado em 2026-08-12)
 
@@ -106,7 +132,7 @@ Este projeto usa exclusivamente planos gratuitos/públicos desses provedores; ne
 
 ## Limitações conhecidas do MVP
 
-Fora de escopo nesta versão (ver `proposal.md` da mudança OpenSpec, seção "diferenciais"): histórico de cotações, entidade `Carteira`, autenticação/autorização, cache avançado, circuit breaker, fallback automático entre provedores US, métricas/tracing, filtros de busca além de paginação simples.
+Fora de escopo (ver `proposal.md`/`design.md` de `openspec/changes/adicionar-carteira-auth-frontend-angular/`, seção "Non-Goals"): venda/baixa de posição (carteira só registra compras/aportes), refresh token/OAuth2/login social, autorização por papéis (roles/admin), histórico de cotações, cache avançado, circuit breaker, fallback automático entre provedores US, métricas/tracing, filtros de busca além de paginação simples.
 
 ## Estrutura do projeto
 
@@ -119,6 +145,9 @@ src/main/java/br/com/gestaoacoes/
   dto/            payloads de entrada/saída (nunca as entidades diretamente)
   mapper/         entidade -> DTO
   exception/      exceções de domínio + handler global (ProblemDetail)
-  config/         filtros e configuração transversal
+  config/         filtros, segurança (Spring Security) e configuração transversal
+  security/       JWT (geração/validação, filtro de autenticação, handlers de erro)
   integration/    portas + adaptadores por provedor externo (Ports and Adapters)
+
+frontend/         aplicação Angular (interface do sistema) — ver frontend/README.md
 ```

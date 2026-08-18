@@ -1,0 +1,134 @@
+.shell {
+  height: 100vh;
+}
+
+.shell__sidenav {
+  width: 264px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(163, 140, 101, 0.22), transparent 45%),
+    var(--app-sidebar-bg);
+  color: var(--app-sidebar-text);
+  border-right: none;
+  display: flex;
+  flex-direction: column;
+  font-family: Figtree, Nunito, sans-serif;
+
+  // mat-list-item usa essas variáveis internas do Material para colorir o texto/ícone — não
+  // basta setar `color` no host, porque elas vêm do tema claro padrão (texto escuro) e venciam
+  // por especificidade, deixando os itens do menu quase ilegíveis no fundo escuro da sidebar.
+  --mat-list-list-item-label-text-color: var(--app-sidebar-text);
+  --mat-list-list-item-supporting-text-color: var(--app-sidebar-text);
+  --mat-list-list-item-leading-icon-color: var(--app-sidebar-text);
+  --mat-list-list-item-hover-label-text-color: #ffffff;
+  --mat-list-list-item-hover-leading-icon-color: #ffffff;
+  --mat-list-list-item-hover-state-layer-color: #ffffff;
+  --mat-list-list-item-hover-state-layer-opacity: 0.06;
+}
+
+.shell__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 1.25rem;
+}
+
+.shell__brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--app-gradient-primary);
+  box-shadow: 0 6px 16px -4px rgba(138, 116, 84, 0.6);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.shell__brand-icon mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.shell__brand-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.shell__brand-subtitle {
+  font-size: 0.75rem;
+  color: var(--app-sidebar-text);
+  opacity: 0.7;
+}
+
+.shell__nav {
+  flex: 1 1 auto;
+  padding-bottom: 1rem;
+}
+
+.shell__nav-label {
+  display: block;
+  padding: 1rem 1.25rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-sidebar-text);
+  opacity: 0.55;
+}
+
+.shell__sidenav ::ng-deep .mat-mdc-list-item {
+  color: var(--app-sidebar-text);
+  border-radius: 0;
+  margin: 0 0.75rem;
+  width: calc(100% - 1.5rem);
+  border-radius: 10px;
+}
+
+.shell__sidenav ::ng-deep .mat-mdc-list-item .mat-icon {
+  color: var(--app-sidebar-text);
+}
+
+.shell__sidenav ::ng-deep .mat-mdc-list-item:hover {
+  background: var(--app-sidebar-bg-elevated);
+}
+
+.shell__link--active {
+  background: linear-gradient(90deg, rgba(163, 140, 101, 0.3), rgba(163, 140, 101, 0.06)) !important;
+  color: var(--app-sidebar-text-active) !important;
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--app-primary-light);
+}
+
+.shell__link--active .mat-icon {
+  color: var(--app-primary-light) !important;
+}
+
+.shell__body {
+  background: var(--app-bg);
+}
+
+.shell__toolbar {
+  background: var(--app-surface);
+  border-bottom: 1px solid var(--app-border);
+  min-height: 64px;
+}
+
+.shell__spacer {
+  flex: 1 1 auto;
+}
+
+.shell__logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.shell__content {
+  padding: 2rem 2rem 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}

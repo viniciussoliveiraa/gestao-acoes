@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
+
+    <!-- Duas variantes do mesmo changeSet: PostgreSQL/H2 preservam o offset de timezone
+         (TIMESTAMP WITH TIME ZONE); MySQL não tem esse tipo, por isso usa TIMESTAMP(6) simples
+         (limitação documentada no README). Usamos "context" (não "dbms") para selecionar a
+         variante: cada perfil ativa o context correspondente via spring.liquibase.contexts, o
+         que permite ao MysqlMigrationSmokeTest exercitar a variante MySQL rodando contra H2 em
+         MODE=MySQL — com "dbms" isso não seria possível, pois o Liquibase detecta o produto real
+         da conexão JDBC (sempre "h2"), ignorando o MODE de compatibilidade. -->
+    <changeSet id="001-create-corretora-postgres" author="gestao-acoes" context="postgres-h2">
+        <createTable tableName="corretora">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="cnpj" type="VARCHAR(14)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_corretora_cnpj"/>
+            </column>
+            <column name="razao_social" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nome_fantasia" type="VARCHAR(255)"/>
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="telefone" type="VARCHAR(20)"/>
+            <column name="cep" type="VARCHAR(8)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="logradouro" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="numero" type="VARCHAR(20)"/>
+            <column name="complemento" type="VARCHAR(100)"/>
+            <column name="bairro" type="VARCHAR(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cidade" type="VARCHAR(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="uf" type="VARCHAR(2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="situacao_cadastral" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="validada_cvm" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="criado_em" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="corretora"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="001-create-corretora-mysql" author="gestao-acoes" context="mysql">
+        <createTable tableName="corretora">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="cnpj" type="VARCHAR(14)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_corretora_cnpj"/>
+            </column>
+            <column name="razao_social" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nome_fantasia" type="VARCHAR(255)"/>
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="telefone" type="VARCHAR(20)"/>
+            <column name="cep" type="VARCHAR(8)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="logradouro" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="numero" type="VARCHAR(20)"/>
+            <column name="complemento" type="VARCHAR(100)"/>
+            <column name="bairro" type="VARCHAR(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cidade" type="VARCHAR(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="uf" type="VARCHAR(2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="situacao_cadastral" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="validada_cvm" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="criado_em" type="TIMESTAMP(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="corretora"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

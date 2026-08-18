@@ -1,0 +1,93 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-header__title"><mat-icon>payments</mat-icon> Proventos</h1>
+    <p class="page-header__subtitle">Dividendos e JCP recebidos pelos seus ativos</p>
+  </div>
+</div>
+
+<div class="surface-card form-card">
+  <h2 class="form-card__header"><mat-icon>add_circle</mat-icon> Novo provento</h2>
+
+  <form [formGroup]="form" (ngSubmit)="submeter()" class="proventos__form">
+    <mat-form-field appearance="outline">
+      <mat-label>Ação</mat-label>
+      <mat-select formControlName="acaoId">
+        @for (acao of acoes(); track acao.id) {
+          <mat-option [value]="acao.id">{{ acao.ticker }} — {{ acao.nomeEmpresa }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Tipo</mat-label>
+      <mat-select formControlName="tipo">
+        @for (tipo of tipos; track tipo) {
+          <mat-option [value]="tipo">{{ tipo }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Valor total</mat-label>
+      <input matInput type="number" step="0.01" formControlName="valorTotal" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Data do pagamento</mat-label>
+      <input matInput [matDatepicker]="picker" formControlName="dataPagamento" />
+      <mat-datepicker-toggle matIconSuffix [for]="picker" />
+      <mat-datepicker #picker />
+    </mat-form-field>
+
+    @if (erro()) {
+      <p class="form-feedback--erro">{{ erro() }}</p>
+    }
+    @if (sucesso()) {
+      <p class="form-feedback--sucesso">{{ sucesso() }}</p>
+    }
+
+    <button mat-flat-button color="primary" type="submit" [disabled]="enviando()">
+      @if (enviando()) {
+        <mat-progress-spinner diameter="20" mode="indeterminate" />
+      } @else {
+        Registrar provento
+      }
+    </button>
+  </form>
+</div>
+
+<h2 class="section-title">Histórico</h2>
+
+@if (proventos().length === 0) {
+  <div class="empty-state surface-card">
+    <mat-icon>payments</mat-icon>
+    <p>Nenhum provento registrado ainda.</p>
+  </div>
+} @else {
+  <div class="data-table-wrapper">
+    <table mat-table [dataSource]="proventos()">
+      <ng-container matColumnDef="tickerAcao">
+        <th mat-header-cell *matHeaderCellDef>Ativo</th>
+        <td mat-cell *matCellDef="let p">{{ p.tickerAcao }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="tipo">
+        <th mat-header-cell *matHeaderCellDef>Tipo</th>
+        <td mat-cell *matCellDef="let p">{{ p.tipo }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="valorTotal">
+        <th mat-header-cell *matHeaderCellDef>Valor</th>
+        <td mat-cell *matCellDef="let p">{{ p.valorTotal | currency: 'BRL' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="dataPagamento">
+        <th mat-header-cell *matHeaderCellDef>Data</th>
+        <td mat-cell *matCellDef="let p">{{ p.dataPagamento | date: 'dd/MM/yyyy' }}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="colunas"></tr>
+      <tr mat-row *matRowDef="let row; columns: colunas"></tr>
+    </table>
+  </div>
+}

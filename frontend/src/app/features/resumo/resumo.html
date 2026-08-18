@@ -1,0 +1,96 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-header__title"><mat-icon>dashboard</mat-icon> Resumo</h1>
+    <p class="page-header__subtitle">Posições consolidadas da sua carteira</p>
+  </div>
+</div>
+
+@if (carregando()) {
+  <div class="resumo__loading">
+    <mat-progress-spinner diameter="32" mode="indeterminate" />
+  </div>
+} @else if (erro()) {
+  <p class="form-feedback--erro">{{ erro() }}</p>
+} @else if (posicoes().length === 0) {
+  <div class="empty-state surface-card">
+    <mat-icon>inbox</mat-icon>
+    <p>Você ainda não tem nenhuma posição.</p>
+    <p>Cadastre uma ação e uma corretora, depois registre um lançamento para começar.</p>
+  </div>
+} @else {
+  <div class="resumo__stats">
+    <div class="resumo__hero">
+      <span class="resumo__hero-label">Patrimônio atual</span>
+      <span class="resumo__hero-valor">{{ valorTotalAtual | currency: 'BRL' }}</span>
+      <span class="trend resumo__hero-trend" [class.trend--positive]="variacaoTotal >= 0" [class.trend--negative]="variacaoTotal < 0">
+        <mat-icon class="trend__icon">{{ variacaoTotal >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+        {{ variacaoTotal | number: '1.2-2' }}% desde o início
+      </span>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>account_balance_wallet</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Valor investido</span>
+        <span class="stat-card__valor">{{ valorTotalInvestido | currency: 'BRL' }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon" [class.stat-card__icon--positivo]="variacaoTotal >= 0" [class.stat-card__icon--negativo]="variacaoTotal < 0">
+        <mat-icon>{{ variacaoTotal >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Resultado</span>
+        <span class="stat-card__valor">{{ valorTotalAtual - valorTotalInvestido | currency: 'BRL' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="data-table-wrapper">
+    <table mat-table [dataSource]="posicoes()">
+      <ng-container matColumnDef="ticker">
+        <th mat-header-cell *matHeaderCellDef>Ativo</th>
+        <td mat-cell *matCellDef="let posicao">
+          <strong>{{ posicao.ticker }}</strong>
+          <div class="resumo__nome-empresa">{{ posicao.nomeEmpresa }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="quantidade">
+        <th mat-header-cell *matHeaderCellDef>Quantidade</th>
+        <td mat-cell *matCellDef="let posicao">{{ posicao.quantidade | number: '1.0-8' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="precoMedio">
+        <th mat-header-cell *matHeaderCellDef>Preço médio</th>
+        <td mat-cell *matCellDef="let posicao">{{ posicao.precoMedio | currency: 'BRL' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="valorInvestido">
+        <th mat-header-cell *matHeaderCellDef>Valor investido</th>
+        <td mat-cell *matCellDef="let posicao">{{ posicao.valorInvestido | currency: 'BRL' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="valorAtual">
+        <th mat-header-cell *matHeaderCellDef>Valor atual</th>
+        <td mat-cell *matCellDef="let posicao">{{ posicao.valorAtual | currency: 'BRL' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="variacaoPercentual">
+        <th mat-header-cell *matHeaderCellDef>Variação</th>
+        <td mat-cell *matCellDef="let posicao">
+          <span class="trend" [class.trend--positive]="posicao.variacaoPercentual >= 0" [class.trend--negative]="posicao.variacaoPercentual < 0">
+            <mat-icon class="trend__icon">{{ posicao.variacaoPercentual >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            {{ posicao.variacaoPercentual | number: '1.2-2' }}%
+          </span>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="colunas"></tr>
+      <tr mat-row *matRowDef="let row; columns: colunas"></tr>
+    </table>
+  </div>
+}

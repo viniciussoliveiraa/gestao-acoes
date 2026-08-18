@@ -1,0 +1,295 @@
+// Include theming for Angular Material with `mat.theme()`.
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$orange-palette,
+        tertiary: mat.$green-palette,
+      ),
+      typography: (
+        plain-family: 'Figtree, Nunito, "Helvetica Neue", Arial, sans-serif',
+        brand-family: 'Figtree, Nunito, "Helvetica Neue", Arial, sans-serif',
+      ),
+      density: -1,
+    )
+  );
+}
+
+:root {
+  // Paleta extraída do CSS público do investidor10.com.br (bundle.css/tailwind), usada como
+  // referência de marca: cinza-chumbo escuro + dourado/bronze como cor de destaque — não é o
+  // azul genérico de dashboard SaaS.
+  --app-bg: #f6f6f4;
+  --app-surface: #ffffff;
+  --app-surface-muted: #f5f5f4;
+  --app-border: #e3e2df;
+  --app-text: #2f3137;
+  --app-text-muted: #6b6f76;
+  --app-text-faint: #a3a29d;
+
+  --app-sidebar-bg: #1c1e24;
+  --app-sidebar-bg-elevated: #2b2d34;
+  --app-sidebar-text: #b8b6b0;
+  --app-sidebar-text-active: #ffffff;
+
+  --app-primary: #a38c65;
+  --app-primary-dark: #8a7454;
+  --app-primary-light: #d3b583;
+  --app-primary-soft: rgba(163, 140, 101, 0.14);
+  --app-gradient-primary: linear-gradient(135deg, #8a7454 0%, #c9a876 100%);
+  --app-gradient-hero: linear-gradient(155deg, #1c1e24 0%, #322c22 55%, #6b5330 100%);
+
+  --app-positive: #009974;
+  --app-positive-soft: rgba(0, 153, 116, 0.12);
+  --app-negative: #cb0b38;
+  --app-negative-soft: rgba(203, 11, 56, 0.1);
+
+  --app-radius-sm: 10px;
+  --app-radius-md: 16px;
+  --app-radius-lg: 20px;
+  --app-radius-pill: 100px;
+
+  --app-shadow-sm: 0 1px 2px rgba(30, 25, 15, 0.06);
+  --app-shadow-md: 0 10px 24px -10px rgba(30, 25, 15, 0.18);
+  --app-shadow-hero: 0 20px 40px -14px rgba(20, 15, 5, 0.4);
+}
+
+body {
+  color-scheme: light;
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-family: Nunito, Figtree, sans-serif;
+  margin: 0;
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: Figtree, Nunito, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--app-text);
+}
+
+// ---- Botões: pílula, gradiente dourado, no estilo dos CTAs do site de referência ----
+
+.mat-mdc-unelevated-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button {
+  border-radius: var(--app-radius-pill) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em;
+}
+
+.mat-mdc-unelevated-button.mat-primary,
+.mat-mdc-raised-button.mat-primary {
+  background-image: var(--app-gradient-primary) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 16px -4px rgba(138, 116, 84, 0.55) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mat-mdc-unelevated-button.mat-primary:hover,
+.mat-mdc-raised-button.mat-primary:hover {
+  box-shadow: 0 8px 20px -4px rgba(138, 116, 84, 0.65) !important;
+  transform: translateY(-1px);
+}
+
+.mat-mdc-unelevated-button.mat-primary:disabled {
+  background-image: none !important;
+  box-shadow: none !important;
+  transform: none;
+  opacity: 0.5;
+}
+
+.mat-mdc-outlined-button.mat-primary {
+  border-color: var(--app-primary) !important;
+  border-width: 1.5px !important;
+  color: var(--app-primary-dark) !important;
+}
+
+// ---- Utilitários compartilhados entre telas ----
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+}
+
+.page-header__title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.page-header__title mat-icon {
+  color: #ffffff;
+  background: var(--app-gradient-primary);
+  border-radius: 12px;
+  padding: 8px;
+  width: 24px;
+  height: 24px;
+  box-sizing: content-box;
+  box-shadow: 0 6px 14px -4px rgba(138, 116, 84, 0.5);
+}
+
+.page-header__subtitle {
+  margin: 0.3rem 0 0;
+  color: var(--app-text-muted);
+  font-size: 0.92rem;
+}
+
+.surface-card {
+  background: var(--app-surface);
+  border-radius: var(--app-radius-lg);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow-md);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.form-card {
+  padding: 1.75rem 2rem;
+  margin-bottom: 2rem;
+}
+
+.form-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 1.4rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: Figtree, sans-serif;
+}
+
+.form-card__header mat-icon {
+  color: var(--app-primary-dark);
+}
+
+.section-title {
+  font-family: Figtree, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  color: var(--app-text);
+}
+
+.data-table-wrapper {
+  background: var(--app-surface);
+  border-radius: var(--app-radius-lg);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow-md);
+  overflow: hidden;
+}
+
+.data-table-wrapper table {
+  width: 100%;
+}
+
+.data-table-wrapper .mat-mdc-header-row {
+  background: var(--app-surface-muted);
+}
+
+.data-table-wrapper .mat-mdc-header-cell {
+  color: var(--app-text-muted);
+  font-weight: 700;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom-color: var(--app-border);
+}
+
+.data-table-wrapper .mat-mdc-cell {
+  border-bottom-color: var(--app-border);
+  color: var(--app-text);
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.data-table-wrapper .mat-mdc-row {
+  transition: background 0.12s ease;
+}
+
+.data-table-wrapper .mat-mdc-row:hover {
+  background: var(--app-surface-muted);
+}
+
+.data-table-wrapper .mat-mdc-row:last-child .mat-mdc-cell {
+  border-bottom: none;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+  color: var(--app-text-muted);
+}
+
+.empty-state mat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  background: var(--app-primary-soft);
+  color: var(--app-primary-dark);
+  margin-bottom: 0.5rem;
+}
+
+.trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 10px;
+  border-radius: var(--app-radius-pill);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.trend--positive {
+  color: var(--app-positive);
+  background: var(--app-positive-soft);
+}
+
+.trend--negative {
+  color: var(--app-negative);
+  background: var(--app-negative-soft);
+}
+
+.form-feedback--erro {
+  color: var(--app-negative);
+  background: var(--app-negative-soft);
+  border-radius: var(--app-radius-sm);
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+  font-weight: 600;
+}
+
+.form-feedback--sucesso {
+  color: var(--app-positive);
+  background: var(--app-positive-soft);
+  border-radius: var(--app-radius-sm);
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+  font-weight: 600;
+}

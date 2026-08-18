@@ -1,0 +1,16 @@
+.proventos__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.proventos__form mat-form-field {
+  flex: 1 1 200px;
+}
+
+.proventos__form button {
+  height: 44px;
+  margin-top: 4px;
+  font-weight: 600;
+}

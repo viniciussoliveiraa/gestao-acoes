@@ -71,7 +71,9 @@ DTOs de resposta de cada provedor ficam confinados ao respectivo adaptador; a co
 - Perfil `test`: H2 em memória (`MODE=PostgreSQL`), para testes automatizados. Migrations em `db/migration/postgresql` (H2 nesse modo é compatível com a sintaxe usada).
 - Perfil `dev`/`default`: PostgreSQL local, banco persistente principal. Migrations em `db/migration/postgresql`.
 - Perfil `mysql`: **obrigatório pelo enunciado** (seção 6: "H2, MySQL e PostgreSQL"). Migrations próprias em `db/migration/mysql` (sintaxe MySQL não é totalmente compatível com PostgreSQL — ver nota de implementação abaixo).
-- `ddl-auto=validate` em todos os perfis; `create-drop` nunca é usado. Schema é sempre gerado por Flyway, nunca por `ddl-auto=update`.
+- `ddl-auto=validate` em todos os perfis; `create-drop` nunca é usado. Schema é sempre gerado por migration versionada, nunca por `ddl-auto=update`.
+
+**Nota (2026-08-18): migrado de Flyway para Liquibase.** As descrições de Flyway/`db/migration/{postgresql,mysql}` neste documento refletem a decisão original deste change e são mantidas como registro histórico. O projeto passou a usar Liquibase (`db/changelog/db.changelog-master.xml` + `changes/`), com changesets por tabela selecionados via `spring.liquibase.contexts` (`postgres-h2` vs `mysql`) em vez de pastas separadas por SGBD — ver `README.md` para o estado atual.
 
 ### Unicidade de ticker: global (RN07)
 

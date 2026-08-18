@@ -1,0 +1,106 @@
+.resumo__loading {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 0;
+}
+
+.resumo__stats {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 1.1rem;
+  margin-bottom: 2rem;
+
+  @media (max-width: 800px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.resumo__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.75rem 2rem;
+  border-radius: var(--app-radius-lg);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(211, 181, 131, 0.3), transparent 55%),
+    var(--app-gradient-hero);
+  color: #fff;
+  box-shadow: var(--app-shadow-hero);
+  font-family: Figtree, Nunito, sans-serif;
+}
+
+.resumo__hero-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.resumo__hero-valor {
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.resumo__hero-trend {
+  width: fit-content;
+  margin-top: 0.25rem;
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.stat-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.stat-card__icon--primary {
+  background: var(--app-primary-soft);
+  color: var(--app-primary);
+}
+
+.stat-card__icon--positivo {
+  background: var(--app-positive-soft);
+  color: var(--app-positive);
+}
+
+.stat-card__icon--negativo {
+  background: var(--app-negative-soft);
+  color: var(--app-negative);
+}
+
+.stat-card__label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--app-text-muted);
+  margin-bottom: 0.15rem;
+}
+
+.stat-card__valor {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+.resumo__nome-empresa {
+  font-size: 0.8rem;
+  color: var(--app-text-muted);
+}
+
+.trend__icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}

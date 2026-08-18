@@ -1,0 +1,9 @@
+.graficos__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.graficos__card {
+  padding: 1.5rem 1.75rem;
+}
