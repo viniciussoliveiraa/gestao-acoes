@@ -1,0 +1,134 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-header__title"><mat-icon>balance</mat-icon> Rebalanceamento</h1>
+    <p class="page-header__subtitle">Defina metas de alocação e veja quanto comprar ou vender de cada ativo</p>
+  </div>
+</div>
+
+@if (carregando()) {
+  <div class="rebalanceamento__loading">
+    <mat-progress-spinner diameter="32" mode="indeterminate" />
+  </div>
+} @else if (erro()) {
+  <p class="form-feedback--erro">{{ erro() }}</p>
+} @else if (posicoes().length === 0) {
+  <div class="empty-state surface-card">
+    <mat-icon>balance</mat-icon>
+    <p>Você ainda não tem posições na carteira.</p>
+    <p>Cadastre lançamentos para poder planejar o rebalanceamento.</p>
+  </div>
+} @else {
+  <div class="surface-card form-card rebalanceamento__controles">
+    <div class="rebalanceamento__controle-linha">
+      <mat-form-field appearance="outline" class="rebalanceamento__campo-aporte">
+        <mat-label>Novo aporte (R$)</mat-label>
+        <input matInput type="number" step="0.01" min="0" [ngModel]="aporte()" (ngModelChange)="atualizarAporte($event)" />
+      </mat-form-field>
+
+      <div class="rebalanceamento__acoes">
+        <button mat-stroked-button type="button" (click)="distribuirComoHoje()">
+          <mat-icon>restart_alt</mat-icon> Usar alocação atual
+        </button>
+        <button mat-stroked-button type="button" (click)="distribuirIgualmente()">
+          <mat-icon>balance</mat-icon> Pesos iguais
+        </button>
+      </div>
+    </div>
+
+    <div class="rebalanceamento__resumo">
+      <span
+        class="rebalanceamento__soma-metas"
+        [class.rebalanceamento__soma-metas--ok]="metasEquilibradas()"
+        [class.rebalanceamento__soma-metas--alerta]="!metasEquilibradas()"
+      >
+        <mat-icon>{{ metasEquilibradas() ? 'check_circle' : 'error' }}</mat-icon>
+        Soma das metas: {{ somaMetas() | number: '1.0-2' }}%
+      </span>
+
+      @if (aporte() > 0) {
+        <span class="rebalanceamento__aporte-info">
+          Aporte sugerido: {{ totalSugerido() | currency: 'BRL' }}
+          @if (aporteNaoAlocado() > 0.01) {
+            · sobram {{ aporteNaoAlocado() | currency: 'BRL' }} (todas as metas já atingidas)
+          }
+        </span>
+      }
+
+      <span class="rebalanceamento__aviso-local">
+        <mat-icon>info</mat-icon>
+        Metas salvas apenas neste navegador
+      </span>
+    </div>
+  </div>
+
+  <div class="data-table-wrapper">
+    <table mat-table [dataSource]="linhas()">
+      <ng-container matColumnDef="ticker">
+        <th mat-header-cell *matHeaderCellDef>Ativo</th>
+        <td mat-cell *matCellDef="let l">
+          <strong>{{ l.ticker }}</strong>
+          <div class="rebalanceamento__nome-empresa">{{ l.nomeEmpresa }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="percentualAtual">
+        <th mat-header-cell *matHeaderCellDef>Alocação atual</th>
+        <td mat-cell *matCellDef="let l">{{ l.percentualAtual | number: '1.1-1' }}%</td>
+      </ng-container>
+
+      <ng-container matColumnDef="valorAtual">
+        <th mat-header-cell *matHeaderCellDef>Valor atual</th>
+        <td mat-cell *matCellDef="let l">{{ l.valorAtual | currency: 'BRL' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="meta">
+        <th mat-header-cell *matHeaderCellDef>Meta (%)</th>
+        <td mat-cell *matCellDef="let l">
+          <input
+            class="rebalanceamento__input-meta"
+            type="number"
+            step="0.1"
+            min="0"
+            max="100"
+            [ngModel]="l.meta"
+            (ngModelChange)="atualizarMeta(l.ticker, $event)"
+          />
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="valorAlvo">
+        <th mat-header-cell *matHeaderCellDef>Valor alvo</th>
+        <td mat-cell *matCellDef="let l">{{ l.valorAlvo | currency: 'BRL' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="diferenca">
+        <th mat-header-cell *matHeaderCellDef>Diferença</th>
+        <td mat-cell *matCellDef="let l">
+          <span class="trend" [class.trend--positive]="l.diferenca > 0.5" [class.trend--negative]="l.diferenca < -0.5">
+            <mat-icon class="trend__icon">{{ l.diferenca >= 0 ? 'add' : 'remove' }}</mat-icon>
+            {{ (l.diferenca >= 0 ? l.diferenca : -l.diferenca) | currency: 'BRL' }}
+            @if (l.diferenca > 0.5) {
+              (comprar)
+            } @else if (l.diferenca < -0.5) {
+              (vender)
+            }
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="sugestaoAporte">
+        <th mat-header-cell *matHeaderCellDef>Sugestão de aporte</th>
+        <td mat-cell *matCellDef="let l">
+          @if (aporte() > 0) {
+            {{ l.sugestaoAporte | currency: 'BRL' }}
+          } @else {
+            —
+          }
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="colunas"></tr>
+      <tr mat-row *matRowDef="let row; columns: colunas"></tr>
+    </table>
+  </div>
+}

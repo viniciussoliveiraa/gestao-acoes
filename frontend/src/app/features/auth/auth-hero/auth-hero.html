@@ -1,0 +1,83 @@
+<div
+  class="auth-hero__spotlight"
+  [style.background]="'radial-gradient(360px circle at ' + spotlight().x + '% ' + spotlight().y + '%, rgba(255,255,255,0.10), transparent 70%)'"
+  aria-hidden="true"
+></div>
+
+<div class="auth-hero__orbs" [style.transform]="'translate(' + parallax().x + 'px, ' + parallax().y + 'px)'" aria-hidden="true">
+  <span class="auth-hero__orb auth-hero__orb--1"></span>
+  <span class="auth-hero__orb auth-hero__orb--2"></span>
+</div>
+
+<svg class="auth-hero__chart" viewBox="0 0 400 140" preserveAspectRatio="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="authHeroFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d3b583" stop-opacity="0.45" />
+      <stop offset="100%" stop-color="#d3b583" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <path
+    class="auth-hero__chart-area"
+    fill="url(#authHeroFill)"
+    d="M0,110 L40,95 L80,102 L120,78 L160,85 L200,55 L240,62 L280,35 L320,42 L360,18 L400,24 L400,140 L0,140 Z"
+  />
+  <path
+    class="auth-hero__chart-line"
+    fill="none"
+    d="M0,110 L40,95 L80,102 L120,78 L160,85 L200,55 L240,62 L280,35 L320,42 L360,18 L400,24"
+  />
+  <circle class="auth-hero__chart-dot" cx="400" cy="24" r="4" />
+</svg>
+
+<div class="auth-hero__preview" aria-hidden="true">
+  <div class="auth-hero__preview-header">
+    <mat-icon>donut_large</mat-icon>
+    <span>Carteira</span>
+  </div>
+  <div class="auth-hero__preview-donut"></div>
+  <div class="auth-hero__preview-bars">
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<div class="auth-hero__ticker" aria-hidden="true">
+  <div class="auth-hero__ticker-track">
+    @for (item of tickers; track $index) {
+      <span class="auth-hero__ticker-item">
+        <strong>{{ item.simbolo }}</strong>
+        <mat-icon [class.auth-hero__ticker-icon--baixa]="!item.alta">{{ item.alta ? 'arrow_drop_up' : 'arrow_drop_down' }}</mat-icon>
+      </span>
+    }
+  </div>
+</div>
+
+<div class="auth-hero__content">
+  <div class="auth-hero__icon">
+    <mat-icon>show_chart</mat-icon>
+  </div>
+
+  <h2>{{ titulo }}</h2>
+  <p>{{ subtitulo }}</p>
+
+  <div class="auth-hero__features">
+    <div class="auth-hero__feature">
+      <mat-icon>dashboard</mat-icon>
+      <span>Resumo consolidado da carteira</span>
+    </div>
+    <div class="auth-hero__feature">
+      <mat-icon>payments</mat-icon>
+      <span>Controle de proventos recebidos</span>
+    </div>
+    <div class="auth-hero__feature">
+      <mat-icon>pie_chart</mat-icon>
+      <span>Gráficos de alocação e evolução</span>
+    </div>
+    <div class="auth-hero__feature">
+      <mat-icon>balance</mat-icon>
+      <span>Simulador de rebalanceamento</span>
+    </div>
+  </div>
+</div>

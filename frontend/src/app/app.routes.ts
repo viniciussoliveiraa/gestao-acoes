@@ -33,6 +33,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/graficos/graficos').then((m) => m.Graficos),
       },
       {
+        path: 'rebalanceamento',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/rebalanceamento/rebalanceamento').then((m) => m.Rebalanceamento),
+      },
+      {
         path: 'corretoras',
         loadComponent: () => import('./features/corretoras/corretoras').then((m) => m.Corretoras),
       },

@@ -1,25 +1,8 @@
 <div class="auth-page">
-  <div class="auth-page__brand">
-    <div class="auth-page__brand-icon">
-      <mat-icon>show_chart</mat-icon>
-    </div>
-    <h2>Comece a organizar seus investimentos hoje</h2>
-    <p>Cadastre-se gratuitamente e tenha uma visão clara da sua carteira.</p>
-    <div class="auth-page__brand-features">
-      <div class="auth-page__brand-feature">
-        <mat-icon>dashboard</mat-icon>
-        <span>Resumo consolidado da carteira</span>
-      </div>
-      <div class="auth-page__brand-feature">
-        <mat-icon>payments</mat-icon>
-        <span>Controle de proventos recebidos</span>
-      </div>
-      <div class="auth-page__brand-feature">
-        <mat-icon>pie_chart</mat-icon>
-        <span>Gráficos de alocação e evolução</span>
-      </div>
-    </div>
-  </div>
+  <app-auth-hero
+    titulo="Comece a organizar seus investimentos hoje"
+    subtitulo="Cadastre-se gratuitamente e tenha uma visão clara da sua carteira."
+  />
 
   <div class="auth-page__form">
     <mat-card class="auth-card">
@@ -34,7 +17,7 @@
       <form [formGroup]="form" (ngSubmit)="submeter()" class="auth-form">
         <mat-form-field appearance="outline">
           <mat-label>Nome</mat-label>
-          <input matInput formControlName="nome" autocomplete="name" />
+          <input matInput formControlName="nome" autocomplete="name" autofocus />
           @if (form.controls.nome.invalid && form.controls.nome.touched) {
             <mat-error>Nome é obrigatório</mat-error>
           }
@@ -50,18 +33,45 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Senha</mat-label>
-          <input matInput type="password" formControlName="senha" autocomplete="new-password" />
+          <input
+            matInput
+            [type]="mostrarSenha() ? 'text' : 'password'"
+            formControlName="senha"
+            autocomplete="new-password"
+            (input)="senhaDigitada.set($any($event.target).value)"
+          />
+          <button
+            type="button"
+            mat-icon-button
+            matSuffix
+            tabindex="-1"
+            [attr.aria-label]="mostrarSenha() ? 'Ocultar senha' : 'Mostrar senha'"
+            (click)="mostrarSenha.set(!mostrarSenha())"
+          >
+            <mat-icon>{{ mostrarSenha() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
           @if (form.controls.senha.invalid && form.controls.senha.touched) {
             <mat-error>Mínimo de 8 caracteres</mat-error>
           }
         </mat-form-field>
 
+        @if (forcaSenha(); as forca) {
+          <div class="auth-form__forca">
+            <div class="auth-form__forca-barra">
+              <span class="auth-form__forca-preenchimento" [style.width.%]="forca.percentual" [style.background]="forca.cor"></span>
+            </div>
+            <span class="auth-form__forca-rotulo" [style.color]="forca.cor">{{ forca.rotulo }}</span>
+          </div>
+        }
+
         @if (erro()) {
           <p class="form-feedback--erro">{{ erro() }}</p>
         }
 
-        <button mat-flat-button color="primary" type="submit" [disabled]="carregando()">
-          @if (carregando()) {
+        <button mat-flat-button color="primary" type="submit" [disabled]="carregando() || sucesso()">
+          @if (sucesso()) {
+            <mat-icon class="auth-form__check">check</mat-icon>
+          } @else if (carregando()) {
             <mat-progress-spinner diameter="20" mode="indeterminate" />
           } @else {
             Criar conta

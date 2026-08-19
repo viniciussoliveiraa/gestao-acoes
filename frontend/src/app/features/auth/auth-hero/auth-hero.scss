@@ -1,0 +1,464 @@
+:host {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  padding: 3rem;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(211, 181, 131, 0.3), transparent 45%),
+    radial-gradient(circle at 90% 90%, rgba(163, 140, 101, 0.25), transparent 50%),
+    var(--app-gradient-hero);
+  background-size:
+    160% 160%,
+    160% 160%,
+    100% 100%;
+  animation: authHeroGradientDrift 16s ease-in-out infinite alternate;
+  color: #fff;
+  font-family: Figtree, Nunito, sans-serif;
+
+  @media (max-width: 900px) {
+    display: none;
+  }
+}
+
+@keyframes authHeroGradientDrift {
+  0% {
+    background-position:
+      0% 0%,
+      100% 100%,
+      0 0;
+  }
+  100% {
+    background-position:
+      25% 15%,
+      75% 85%,
+      0 0;
+  }
+}
+
+.auth-hero__spotlight {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition: background 0.15s ease-out;
+}
+
+.auth-hero__orbs {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.2s ease-out;
+  will-change: transform;
+}
+
+.auth-hero__orb {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+  animation: authHeroFloat 14s ease-in-out infinite alternate;
+}
+
+.auth-hero__orb--1 {
+  width: 260px;
+  height: 260px;
+  top: -60px;
+  right: -40px;
+  background: var(--app-primary-light);
+  opacity: 0.35;
+}
+
+.auth-hero__orb--2 {
+  width: 220px;
+  height: 220px;
+  bottom: -50px;
+  left: -30px;
+  background: var(--app-positive);
+  opacity: 0.22;
+  animation-delay: -7s;
+}
+
+@keyframes authHeroFloat {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    transform: translate(18px, -22px) scale(1.08);
+  }
+}
+
+.auth-hero__chart {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 42%;
+  pointer-events: none;
+}
+
+// A área e a linha trocam de formato continuamente (mesmos 11 pontos no eixo X,
+// só a altura muda) pra simular uma série "viva" — puramente decorativo, não são
+// cotações reais. O desenho inicial (authHeroDraw) termina em 2.5s; a partir daí
+// o "d" começa a variar suavemente entre três formas em loop.
+.auth-hero__chart-area {
+  animation: authHeroChartMorphArea 10s ease-in-out 2.5s infinite;
+}
+
+.auth-hero__chart-line {
+  stroke: var(--app-primary-light);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 620;
+  stroke-dashoffset: 620;
+  animation:
+    authHeroDraw 2.2s ease-out 0.3s forwards,
+    authHeroChartMorphLine 10s ease-in-out 2.5s infinite;
+}
+
+.auth-hero__chart-dot {
+  fill: var(--app-primary-light);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    authHeroDotIn 0.3s ease-out 2.4s forwards,
+    authHeroPulse 2s ease-in-out 2.6s infinite,
+    authHeroChartMorphDot 10s ease-in-out 2.5s infinite;
+}
+
+@keyframes authHeroDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes authHeroDotIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes authHeroPulse {
+  0%,
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+  50% {
+    scale: 1.6;
+    opacity: 0.55;
+  }
+}
+
+@keyframes authHeroChartMorphLine {
+  0%,
+  100% {
+    d: path('M0,110 L40,95 L80,102 L120,78 L160,85 L200,55 L240,62 L280,35 L320,42 L360,18 L400,24');
+  }
+  33% {
+    d: path('M0,116 L40,100 L80,84 L120,92 L160,64 L200,72 L240,44 L280,54 L320,26 L360,34 L400,14');
+  }
+  66% {
+    d: path('M0,122 L40,108 L80,112 L120,92 L160,98 L200,74 L240,54 L280,64 L320,34 L360,20 L400,26');
+  }
+}
+
+@keyframes authHeroChartMorphArea {
+  0%,
+  100% {
+    d: path('M0,110 L40,95 L80,102 L120,78 L160,85 L200,55 L240,62 L280,35 L320,42 L360,18 L400,24 L400,140 L0,140 Z');
+  }
+  33% {
+    d: path('M0,116 L40,100 L80,84 L120,92 L160,64 L200,72 L240,44 L280,54 L320,26 L360,34 L400,14 L400,140 L0,140 Z');
+  }
+  66% {
+    d: path('M0,122 L40,108 L80,112 L120,92 L160,98 L200,74 L240,54 L280,64 L320,34 L360,20 L400,26 L400,140 L0,140 Z');
+  }
+}
+
+@keyframes authHeroChartMorphDot {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  33% {
+    translate: 0 -10px;
+  }
+  66% {
+    translate: 0 2px;
+  }
+}
+
+// Cartão "glass" decorativo — uma prévia ilustrativa do painel, sem números reais.
+.auth-hero__preview {
+  position: absolute;
+  top: 2.75rem;
+  right: 2.75rem;
+  z-index: 1;
+  width: 132px;
+  padding: 0.9rem;
+  border-radius: var(--app-radius-md);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 16px 34px -12px rgba(0, 0, 0, 0.45);
+  animation: authHeroPreviewFloat 6s ease-in-out infinite;
+
+  @media (max-width: 1150px) {
+    display: none;
+  }
+}
+
+@keyframes authHeroPreviewFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.auth-hero__preview-header {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.auth-hero__preview-header mat-icon {
+  font-size: 15px;
+  width: 15px;
+  height: 15px;
+  color: var(--app-primary-light);
+}
+
+.auth-hero__preview-donut {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 0.8rem;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--app-primary-light) 0deg 150deg,
+    var(--app-positive) 150deg 235deg,
+    rgba(255, 255, 255, 0.22) 235deg 360deg
+  );
+}
+
+.auth-hero__preview-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 26px;
+}
+
+.auth-hero__preview-bars span {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, var(--app-primary-light), rgba(211, 181, 131, 0.25));
+}
+
+.auth-hero__preview-bars span:nth-child(1) {
+  height: 45%;
+}
+.auth-hero__preview-bars span:nth-child(2) {
+  height: 70%;
+}
+.auth-hero__preview-bars span:nth-child(3) {
+  height: 55%;
+}
+.auth-hero__preview-bars span:nth-child(4) {
+  height: 92%;
+}
+
+// Faixa estilo "ticker de pregão" — puramente decorativa, os símbolos não refletem cotações reais.
+.auth-hero__ticker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  height: 28px;
+  overflow: hidden;
+  background: rgba(10, 8, 4, 0.35);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.auth-hero__ticker-track {
+  display: flex;
+  width: max-content;
+  animation: authHeroTickerScroll 24s linear infinite;
+}
+
+.auth-hero__ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0 1.1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+}
+
+.auth-hero__ticker-item mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: #4fd1a5;
+}
+
+.auth-hero__ticker-icon--baixa {
+  color: #f28fa0;
+}
+
+@keyframes authHeroTickerScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.auth-hero__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.auth-hero__icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--app-gradient-primary);
+  box-shadow: 0 10px 24px -6px rgba(138, 116, 84, 0.65);
+}
+
+.auth-hero__icon::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 20px;
+  border: 1px solid rgba(211, 181, 131, 0.55);
+  animation: authHeroRing 2.4s ease-out infinite;
+}
+
+@keyframes authHeroRing {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.auth-hero__icon mat-icon {
+  font-size: 30px;
+  width: 30px;
+  height: 30px;
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  max-width: 420px;
+  line-height: 1.25;
+}
+
+p {
+  color: rgba(255, 255, 255, 0.65);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.auth-hero__features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.auth-hero__feature {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.92rem;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: authHeroFeatureIn 0.5s ease-out forwards;
+}
+
+.auth-hero__feature:nth-child(1) {
+  animation-delay: 0.15s;
+}
+.auth-hero__feature:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.auth-hero__feature:nth-child(3) {
+  animation-delay: 0.45s;
+}
+.auth-hero__feature:nth-child(4) {
+  animation-delay: 0.6s;
+}
+
+@keyframes authHeroFeatureIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-hero__feature mat-icon {
+  color: var(--app-primary-light);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host,
+  .auth-hero__orb,
+  .auth-hero__chart-area,
+  .auth-hero__chart-line,
+  .auth-hero__chart-dot,
+  .auth-hero__icon::before,
+  .auth-hero__feature,
+  .auth-hero__preview,
+  .auth-hero__ticker-track {
+    animation: none !important;
+  }
+
+  .auth-hero__chart-line {
+    stroke-dashoffset: 0;
+  }
+
+  .auth-hero__chart-dot {
+    opacity: 1;
+  }
+
+  .auth-hero__feature {
+    opacity: 1;
+    transform: none;
+  }
+}

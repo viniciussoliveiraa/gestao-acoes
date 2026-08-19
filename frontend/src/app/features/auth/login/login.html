@@ -1,25 +1,8 @@
 <div class="auth-page">
-  <div class="auth-page__brand">
-    <div class="auth-page__brand-icon">
-      <mat-icon>show_chart</mat-icon>
-    </div>
-    <h2>Gerencie sua carteira de ações em um só lugar</h2>
-    <p>Acompanhe posições, lançamentos e proventos com dados reais de mercado.</p>
-    <div class="auth-page__brand-features">
-      <div class="auth-page__brand-feature">
-        <mat-icon>dashboard</mat-icon>
-        <span>Resumo consolidado da carteira</span>
-      </div>
-      <div class="auth-page__brand-feature">
-        <mat-icon>payments</mat-icon>
-        <span>Controle de proventos recebidos</span>
-      </div>
-      <div class="auth-page__brand-feature">
-        <mat-icon>pie_chart</mat-icon>
-        <span>Gráficos de alocação e evolução</span>
-      </div>
-    </div>
-  </div>
+  <app-auth-hero
+    titulo="Gerencie sua carteira de ações em um só lugar"
+    subtitulo="Acompanhe posições, lançamentos e proventos com dados reais de mercado."
+  />
 
   <div class="auth-page__form">
     <mat-card class="auth-card">
@@ -28,13 +11,13 @@
         <span>Gestão de Ações</span>
       </div>
 
-      <h1>Bem-vindo de volta</h1>
+      <h1>{{ saudacao }}, bem-vindo de volta</h1>
       <p class="auth-card__lead">Entre com sua conta para continuar.</p>
 
       <form [formGroup]="form" (ngSubmit)="submeter()" class="auth-form">
         <mat-form-field appearance="outline">
           <mat-label>Email</mat-label>
-          <input matInput type="email" formControlName="email" autocomplete="email" />
+          <input matInput type="email" formControlName="email" autocomplete="email" autofocus />
           @if (form.controls.email.invalid && form.controls.email.touched) {
             <mat-error>Informe um email válido</mat-error>
           }
@@ -42,18 +25,37 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Senha</mat-label>
-          <input matInput type="password" formControlName="senha" autocomplete="current-password" />
+          <input
+            matInput
+            [type]="mostrarSenha() ? 'text' : 'password'"
+            formControlName="senha"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            mat-icon-button
+            matSuffix
+            tabindex="-1"
+            [attr.aria-label]="mostrarSenha() ? 'Ocultar senha' : 'Mostrar senha'"
+            (click)="mostrarSenha.set(!mostrarSenha())"
+          >
+            <mat-icon>{{ mostrarSenha() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
           @if (form.controls.senha.invalid && form.controls.senha.touched) {
             <mat-error>Senha é obrigatória</mat-error>
           }
         </mat-form-field>
 
+        <mat-checkbox formControlName="lembrar" class="auth-form__lembrar">Manter conectado</mat-checkbox>
+
         @if (erro()) {
           <p class="form-feedback--erro">{{ erro() }}</p>
         }
 
-        <button mat-flat-button color="primary" type="submit" [disabled]="carregando()">
-          @if (carregando()) {
+        <button mat-flat-button color="primary" type="submit" [disabled]="carregando() || sucesso()">
+          @if (sucesso()) {
+            <mat-icon class="auth-form__check">check</mat-icon>
+          } @else if (carregando()) {
             <mat-progress-spinner diameter="20" mode="indeterminate" />
           } @else {
             Entrar

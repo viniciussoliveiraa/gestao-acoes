@@ -3,9 +3,11 @@ package br.com.gestaoacoes.service;
 import br.com.gestaoacoes.dto.LancamentoRequest;
 import br.com.gestaoacoes.dto.PosicaoResponse;
 import br.com.gestaoacoes.exception.RecursoNaoEncontradoException;
+import br.com.gestaoacoes.integration.cotacao.CambioPort;
 import br.com.gestaoacoes.model.Acao;
 import br.com.gestaoacoes.model.Corretora;
 import br.com.gestaoacoes.model.Lancamento;
+import br.com.gestaoacoes.model.Moeda;
 import br.com.gestaoacoes.repository.AcaoRepository;
 import br.com.gestaoacoes.repository.CorretoraRepository;
 import br.com.gestaoacoes.repository.LancamentoRepository;
@@ -27,12 +29,14 @@ public class CarteiraService {
     private final LancamentoRepository lancamentoRepository;
     private final AcaoRepository acaoRepository;
     private final CorretoraRepository corretoraRepository;
+    private final CambioPort cambioPort;
 
     public CarteiraService(LancamentoRepository lancamentoRepository, AcaoRepository acaoRepository,
-                            CorretoraRepository corretoraRepository) {
+                            CorretoraRepository corretoraRepository, CambioPort cambioPort) {
         this.lancamentoRepository = lancamentoRepository;
         this.acaoRepository = acaoRepository;
         this.corretoraRepository = corretoraRepository;
+        this.cambioPort = cambioPort;
     }
 
     public Lancamento registrarLancamento(Long usuarioId, LancamentoRequest request) {
@@ -52,12 +56,19 @@ public class CarteiraService {
     }
 
     public List<PosicaoResponse> listarPosicoes(Long usuarioId) {
-        return lancamentoRepository.agregarPosicoesPorUsuario(usuarioId).stream()
-                .map(this::calcularPosicao)
+        List<PosicaoAgregada> agregadas = lancamentoRepository.agregarPosicoesPorUsuario(usuarioId);
+
+        // Busca o câmbio uma única vez por chamada (não por posição) e só quando há
+        // ao menos um ativo em USD na carteira.
+        boolean temAtivoEmUsd = agregadas.stream().anyMatch(a -> a.acao().getMoeda() == Moeda.USD);
+        BigDecimal taxaCambioUsdParaBrl = temAtivoEmUsd ? cambioPort.obterCotacaoUsdParaBrl() : null;
+
+        return agregadas.stream()
+                .map(agregada -> calcularPosicao(agregada, taxaCambioUsdParaBrl))
                 .toList();
     }
 
-    private PosicaoResponse calcularPosicao(PosicaoAgregada agregada) {
+    private PosicaoResponse calcularPosicao(PosicaoAgregada agregada, BigDecimal taxaCambioUsdParaBrl) {
         Acao acao = agregada.acao();
         BigDecimal quantidade = agregada.quantidadeTotal();
         BigDecimal valorInvestido = agregada.valorInvestidoTotal().setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
@@ -70,6 +81,14 @@ public class CarteiraService {
                 : valorAtual.subtract(valorInvestido)
                         .multiply(BigDecimal.valueOf(100))
                         .divide(valorInvestido, ESCALA_MONETARIA, RoundingMode.HALF_UP);
+
+        if (acao.getMoeda() == Moeda.USD) {
+            // Converte para BRL com o câmbio atual — como o mesmo fator multiplica
+            // valorInvestido e valorAtual, a variação percentual não é afetada.
+            valorInvestido = valorInvestido.multiply(taxaCambioUsdParaBrl).setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+            precoMedio = precoMedio.multiply(taxaCambioUsdParaBrl).setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+            valorAtual = valorAtual.multiply(taxaCambioUsdParaBrl).setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+        }
 
         return new PosicaoResponse(acao.getId(), acao.getTicker(), acao.getNomeEmpresa(), quantidade,
                 precoMedio, valorInvestido, valorAtual, variacaoPercentual);

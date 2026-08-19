@@ -3,6 +3,7 @@ package br.com.gestaoacoes.service;
 import br.com.gestaoacoes.dto.LancamentoRequest;
 import br.com.gestaoacoes.dto.PosicaoResponse;
 import br.com.gestaoacoes.exception.RecursoNaoEncontradoException;
+import br.com.gestaoacoes.integration.cotacao.CambioPort;
 import br.com.gestaoacoes.model.Acao;
 import br.com.gestaoacoes.model.Corretora;
 import br.com.gestaoacoes.model.Lancamento;
@@ -39,9 +40,11 @@ class CarteiraServiceTest {
     private AcaoRepository acaoRepository;
     @Mock
     private CorretoraRepository corretoraRepository;
+    @Mock
+    private CambioPort cambioPort;
 
     private CarteiraService service() {
-        return new CarteiraService(lancamentoRepository, acaoRepository, corretoraRepository);
+        return new CarteiraService(lancamentoRepository, acaoRepository, corretoraRepository, cambioPort);
     }
 
     @Test
@@ -108,10 +111,47 @@ class CarteiraServiceTest {
         when(lancamentoRepository.agregarPosicoesPorUsuario(42L)).thenReturn(List.of());
 
         assertThat(service.listarPosicoes(42L)).isEmpty();
+        verify(cambioPort, never()).obterCotacaoUsdParaBrl();
+    }
+
+    @Test
+    void listarPosicoesEmUsdConverteParaBrlUsandoCambioAtualEMantemVariacao() {
+        CarteiraService service = service();
+        Acao acao = acaoUsd("AAPL", new BigDecimal("300.0000"));
+        PosicaoAgregada agregada = new PosicaoAgregada(acao, new BigDecimal("2"), new BigDecimal("30.0000"));
+        when(lancamentoRepository.agregarPosicoesPorUsuario(42L)).thenReturn(List.of(agregada));
+        when(cambioPort.obterCotacaoUsdParaBrl()).thenReturn(new BigDecimal("5.0000"));
+
+        List<PosicaoResponse> posicoes = service.listarPosicoes(42L);
+
+        assertThat(posicoes).hasSize(1);
+        PosicaoResponse posicao = posicoes.get(0);
+        // Nativo (USD): precoMedio 15.00, valorInvestido 30.00, valorAtual 600.00 -> convertido x5.
+        assertThat(posicao.precoMedio()).isEqualByComparingTo("75.0000");
+        assertThat(posicao.valorInvestido()).isEqualByComparingTo("150.0000");
+        assertThat(posicao.valorAtual()).isEqualByComparingTo("3000.0000");
+        assertThat(posicao.variacaoPercentual()).isEqualByComparingTo("1900.0000");
+    }
+
+    @Test
+    void listarPosicoesSoEmBrlNaoConsultaCambio() {
+        CarteiraService service = service();
+        Acao acao = acao("PETR4", new BigDecimal("40.0000"));
+        PosicaoAgregada agregada = new PosicaoAgregada(acao, new BigDecimal("100"), new BigDecimal("3250.0000"));
+        when(lancamentoRepository.agregarPosicoesPorUsuario(42L)).thenReturn(List.of(agregada));
+
+        service.listarPosicoes(42L);
+
+        verify(cambioPort, never()).obterCotacaoUsdParaBrl();
     }
 
     private Acao acao(String ticker, BigDecimal cotacao) {
         return new Acao(ticker, "Empresa Teste", Mercado.BRASIL, Moeda.BRL, cotacao,
+                OffsetDateTime.now(), "teste", OffsetDateTime.now());
+    }
+
+    private Acao acaoUsd(String ticker, BigDecimal cotacao) {
+        return new Acao(ticker, "Empresa Teste", Mercado.ESTADOS_UNIDOS, Moeda.USD, cotacao,
                 OffsetDateTime.now(), "teste", OffsetDateTime.now());
     }
 

@@ -1,7 +1,7 @@
 <div class="page-header">
   <div>
     <h1 class="page-header__title"><mat-icon>pie_chart</mat-icon> Gráficos</h1>
-    <p class="page-header__subtitle">Alocação da carteira e evolução do valor investido</p>
+    <p class="page-header__subtitle">Alocação, desempenho e evolução da sua carteira</p>
   </div>
 </div>
 
@@ -11,15 +11,188 @@
     <p>Cadastre lançamentos para visualizar os gráficos da sua carteira.</p>
   </div>
 } @else {
+  <div class="graficos__stats">
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>account_balance_wallet</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Patrimônio atual</span>
+        <span class="stat-card__valor">{{ totalAtual() | currency: 'BRL' }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>savings</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Valor investido</span>
+        <span class="stat-card__valor">{{ totalInvestido() | currency: 'BRL' }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon" [class.stat-card__icon--positivo]="resultado() >= 0" [class.stat-card__icon--negativo]="resultado() < 0">
+        <mat-icon>{{ resultado() >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Resultado</span>
+        <span class="stat-card__valor">{{ resultado() | currency: 'BRL' }}</span>
+        <span class="trend" [class.trend--positive]="variacaoPercentual() >= 0" [class.trend--negative]="variacaoPercentual() < 0">
+          <mat-icon class="trend__icon">{{ variacaoPercentual() >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+          {{ variacaoPercentual() | number: '1.2-2' }}%
+        </span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--positivo">
+        <mat-icon>paid</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Proventos recebidos</span>
+        <span class="stat-card__valor">{{ totalProventos() | currency: 'BRL' }}</span>
+        <span class="graficos__yield">{{ yieldSobreCusto() | number: '1.2-2' }}% sobre o investido</span>
+      </div>
+    </div>
+  </div>
+
+  @if (melhorAtivo(); as melhor) {
+    @if (piorAtivo(); as pior) {
+      <div class="graficos__destaques">
+        <div class="graficos__destaque">
+          <span class="graficos__destaque-label"><mat-icon>arrow_circle_up</mat-icon> Melhor desempenho</span>
+          <span class="graficos__destaque-ticker">{{ melhor.ticker }}</span>
+          <span class="trend" [class.trend--positive]="melhor.variacaoPercentual >= 0" [class.trend--negative]="melhor.variacaoPercentual < 0">
+            <mat-icon class="trend__icon">{{ melhor.variacaoPercentual >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            {{ melhor.variacaoPercentual | number: '1.2-2' }}%
+          </span>
+        </div>
+        <div class="graficos__destaque">
+          <span class="graficos__destaque-label"><mat-icon>arrow_circle_down</mat-icon> Pior desempenho</span>
+          <span class="graficos__destaque-ticker">{{ pior.ticker }}</span>
+          <span class="trend" [class.trend--positive]="pior.variacaoPercentual >= 0" [class.trend--negative]="pior.variacaoPercentual < 0">
+            <mat-icon class="trend__icon">{{ pior.variacaoPercentual >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            {{ pior.variacaoPercentual | number: '1.2-2' }}%
+          </span>
+        </div>
+      </div>
+    }
+  }
+
+  @if (mercadoLista().length > 1) {
+    <div class="surface-card graficos__card graficos__card--full">
+      <h2 class="form-card__header"><mat-icon>public</mat-icon> Diversificação por mercado</h2>
+      <div class="graficos__proporcao">
+        @for (item of mercadoLista(); track item.rotulo) {
+          <span class="graficos__proporcao-segmento" [style.width.%]="item.percentual" [style.background]="item.cor"></span>
+        }
+      </div>
+      <ul class="graficos__pills">
+        @for (item of mercadoLista(); track item.rotulo) {
+          <li class="graficos__pill">
+            <span class="graficos__legenda-cor" [style.background]="item.cor"></span>
+            <span class="graficos__pill-nome">{{ item.rotulo }}</span>
+            <span class="graficos__pill-percentual">{{ item.percentual | number: '1.1-1' }}%</span>
+            <span class="graficos__pill-valor">{{ item.valor | currency: 'BRL' }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
   <div class="graficos__grid">
     <div class="surface-card graficos__card">
       <h2 class="form-card__header"><mat-icon>donut_large</mat-icon> Alocação por ativo</h2>
-      <canvas baseChart [data]="alocacaoData()" [options]="alocacaoOptions" type="doughnut"></canvas>
+      <div class="graficos__alocacao">
+        <div class="graficos__donut">
+          <canvas
+            baseChart
+            [data]="alocacaoData()"
+            [options]="alocacaoOptions"
+            [plugins]="[centroTotalPlugin]"
+            type="doughnut"
+          ></canvas>
+        </div>
+        <ul class="graficos__legenda">
+          @for (item of alocacaoLista(); track item.rotulo) {
+            <li class="graficos__legenda-item">
+              <span class="graficos__legenda-cor" [style.background]="item.cor"></span>
+              <span class="graficos__legenda-ticker">{{ item.rotulo }}</span>
+              <span class="graficos__legenda-percentual">{{ item.percentual | number: '1.1-1' }}%</span>
+              <span class="graficos__legenda-valor">{{ item.valor | currency: 'BRL' }}</span>
+            </li>
+          }
+        </ul>
+      </div>
     </div>
 
     <div class="surface-card graficos__card">
       <h2 class="form-card__header"><mat-icon>show_chart</mat-icon> Evolução do valor investido</h2>
       <canvas baseChart [data]="evolucaoData()" [options]="evolucaoOptions" type="line"></canvas>
     </div>
+
+    <div class="surface-card graficos__card">
+      <h2 class="form-card__header"><mat-icon>leaderboard</mat-icon> Retorno por ativo</h2>
+      <div class="graficos__barra-scroll">
+        <div class="graficos__barra-interno" [style.height.px]="retornoAltura()">
+          <canvas baseChart [data]="retornoData()" [options]="retornoOptions" type="bar"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="surface-card graficos__card">
+      <h2 class="form-card__header"><mat-icon>calendar_month</mat-icon> Proventos recebidos por mês</h2>
+      <canvas baseChart [data]="proventosMensaisData()" [options]="proventosMensaisOptions" type="bar"></canvas>
+    </div>
+
+    @if (proventos().length > 0) {
+      <div class="surface-card graficos__card">
+        <h2 class="form-card__header"><mat-icon>payments</mat-icon> Proventos por ativo</h2>
+        <div class="graficos__barra-scroll">
+          <div class="graficos__barra-interno" [style.height.px]="proventosPorAtivoAltura()">
+            <canvas baseChart [data]="proventosPorAtivoData()" [options]="proventosPorAtivoOptions" type="bar"></canvas>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (proventosPorTipoLista().length > 1) {
+      <div class="surface-card graficos__card">
+        <h2 class="form-card__header"><mat-icon>sell</mat-icon> Proventos por tipo</h2>
+        <div class="graficos__proporcao">
+          @for (item of proventosPorTipoLista(); track item.rotulo) {
+            <span class="graficos__proporcao-segmento" [style.width.%]="item.percentual" [style.background]="item.cor"></span>
+          }
+        </div>
+        <ul class="graficos__legenda">
+          @for (item of proventosPorTipoLista(); track item.rotulo) {
+            <li class="graficos__legenda-item">
+              <span class="graficos__legenda-cor" [style.background]="item.cor"></span>
+              <span class="graficos__legenda-ticker">{{ item.rotulo }}</span>
+              <span class="graficos__legenda-percentual">{{ item.percentual | number: '1.1-1' }}%</span>
+              <span class="graficos__legenda-valor">{{ item.valor | currency: 'BRL' }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    }
   </div>
+
+  @if (corretoraLista().length > 0) {
+    <div class="surface-card graficos__card graficos__card--full">
+      <h2 class="form-card__header"><mat-icon>account_balance</mat-icon> Valor investido por corretora</h2>
+      <ul class="graficos__pills">
+        @for (item of corretoraLista(); track item.rotulo) {
+          <li class="graficos__pill">
+            <span class="graficos__legenda-cor" [style.background]="item.cor"></span>
+            <span class="graficos__pill-nome">{{ item.rotulo }}</span>
+            <span class="graficos__pill-percentual">{{ item.percentual | number: '1.1-1' }}%</span>
+            <span class="graficos__pill-valor">{{ item.valor | currency: 'BRL' }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+  }
 }

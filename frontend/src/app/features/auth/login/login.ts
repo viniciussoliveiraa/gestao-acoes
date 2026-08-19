@@ -3,20 +3,24 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/services/auth.service';
 import { mensagemDeErro } from '../../../core/services/erro.util';
+import { AuthHero } from '../auth-hero/auth-hero';
 
 @Component({
   selector: 'app-login',
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    AuthHero,
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -27,13 +31,17 @@ import { mensagemDeErro } from '../../../core/services/erro.util';
 })
 export class Login {
   protected readonly carregando = signal(false);
+  protected readonly sucesso = signal(false);
   protected readonly erro = signal<string | null>(null);
+  protected readonly mostrarSenha = signal(false);
+  protected readonly saudacao = this.saudacaoPorHorario();
 
   private readonly fb = inject(FormBuilder);
 
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     senha: ['', Validators.required],
+    lembrar: [true],
   });
 
   constructor(
@@ -49,16 +57,30 @@ export class Login {
 
     this.carregando.set(true);
     this.erro.set(null);
+    const { email, senha, lembrar } = this.form.getRawValue();
 
-    this.authService.login(this.form.getRawValue()).subscribe({
+    this.authService.login({ email, senha }, lembrar).subscribe({
       next: () => {
         this.carregando.set(false);
-        this.router.navigate(['/resumo']);
+        this.sucesso.set(true);
+        // Segura um instante pra o usuário ver a confirmação antes de sair da tela.
+        setTimeout(() => this.router.navigate(['/resumo']), 550);
       },
       error: (erro) => {
         this.carregando.set(false);
         this.erro.set(mensagemDeErro(erro));
       },
     });
+  }
+
+  private saudacaoPorHorario(): string {
+    const hora = new Date().getHours();
+    if (hora < 12) {
+      return 'Bom dia';
+    }
+    if (hora < 18) {
+      return 'Boa tarde';
+    }
+    return 'Boa noite';
   }
 }

@@ -1,0 +1,99 @@
+.rebalanceamento__loading {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 0;
+}
+
+.rebalanceamento__nome-empresa {
+  font-size: 0.8rem;
+  color: var(--app-text-muted);
+}
+
+.rebalanceamento__controles {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.rebalanceamento__controle-linha {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.rebalanceamento__campo-aporte {
+  width: 220px;
+}
+
+.rebalanceamento__acoes {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rebalanceamento__resumo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--app-border);
+  font-size: 0.85rem;
+}
+
+.rebalanceamento__soma-metas {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.rebalanceamento__soma-metas--ok {
+  color: var(--app-positive);
+}
+
+.rebalanceamento__soma-metas--alerta {
+  color: var(--app-negative);
+}
+
+.rebalanceamento__aporte-info {
+  color: var(--app-text);
+}
+
+.rebalanceamento__aviso-local {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  color: var(--app-text-faint);
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.rebalanceamento__input-meta {
+  width: 72px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-sm);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text);
+  background: var(--app-surface);
+
+  &:focus {
+    outline: none;
+    border-color: var(--app-primary);
+  }
+}

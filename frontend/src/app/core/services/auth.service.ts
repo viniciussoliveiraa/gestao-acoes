@@ -8,7 +8,9 @@ const CHAVE_TOKEN = 'gestao-acoes.token';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly tokenSignal = signal<string | null>(localStorage.getItem(CHAVE_TOKEN));
+  private readonly tokenSignal = signal<string | null>(
+    localStorage.getItem(CHAVE_TOKEN) ?? sessionStorage.getItem(CHAVE_TOKEN)
+  );
   readonly autenticado = computed(() => this.tokenSignal() !== null);
 
   constructor(private readonly http: HttpClient) {}
@@ -21,19 +23,22 @@ export class AuthService {
     return this.http.post<UsuarioResponse>(`${environment.apiUrl}/auth/registrar`, request);
   }
 
-  login(request: LoginRequest): Observable<LoginResponse> {
+  /** @param lembrar mantém a sessão após fechar o navegador (localStorage) em vez de só na aba atual (sessionStorage). */
+  login(request: LoginRequest, lembrar = true): Observable<LoginResponse> {
     return this.http
       .post<LoginResponse>(`${environment.apiUrl}/auth/login`, request)
-      .pipe(tap((resposta) => this.armazenarToken(resposta.token)));
+      .pipe(tap((resposta) => this.armazenarToken(resposta.token, lembrar)));
   }
 
   logout(): void {
     localStorage.removeItem(CHAVE_TOKEN);
+    sessionStorage.removeItem(CHAVE_TOKEN);
     this.tokenSignal.set(null);
   }
 
-  private armazenarToken(token: string): void {
-    localStorage.setItem(CHAVE_TOKEN, token);
+  private armazenarToken(token: string, lembrar: boolean): void {
+    (lembrar ? sessionStorage : localStorage).removeItem(CHAVE_TOKEN);
+    (lembrar ? localStorage : sessionStorage).setItem(CHAVE_TOKEN, token);
     this.tokenSignal.set(token);
   }
 }
