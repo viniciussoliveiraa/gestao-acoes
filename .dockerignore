@@ -1,0 +1,29 @@
+# Controle de versao e configuracoes das IDEs
+.git
+.gitignore
+.idea
+.vscode
+*.iml
+
+# Arquivos gerados pelo build e pela aplicacao
+target
+build
+*.class
+*.log
+
+# Segredos e configuracoes locais
+.env
+.env.*
+
+# Frontend Angular (nao faz parte da imagem do backend)
+frontend
+
+# Arquivos que nao sao necessarios para compilar a aplicacao
+docs
+openspec
+postman
+.claude
+README.md
+HELP.md
+.DS_Store
+**/.DS_Store
