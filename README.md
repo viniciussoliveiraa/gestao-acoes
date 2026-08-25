@@ -83,6 +83,61 @@ npm start   # http://localhost:4200
 
 Ver `frontend/README.md` para detalhes.
 
+## Executando com Docker
+
+Alternativa à instalação manual do Java, do PostgreSQL e do Node: backend, banco e frontend Angular sobem juntos via Docker Compose (`Dockerfile` + `compose.yaml` na raiz do projeto; `frontend/Dockerfile` para o Angular). Tudo fica atrás de uma única porta publicada — ver detalhes abaixo.
+
+Pré-requisitos: Docker Desktop (Windows/macOS) ou Docker Engine + plugin Compose (Linux).
+
+```bash
+docker --version
+docker compose version
+```
+
+Se ainda não existir um `.env` na raiz, copie o exemplo e ajuste os valores (principalmente `SPRING_DATASOURCE_PASSWORD` e `JWT_SECRET`):
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Suba os serviços (constrói a imagem na primeira vez):
+
+```bash
+./mvnw test
+docker compose up -d --build
+```
+
+Acompanhe os logs da aplicação:
+
+```bash
+docker compose logs -f aplicacao
+```
+
+Com `APP_PORT=8080` (padrão), o frontend Angular e a API ficam disponíveis na mesma porta: `http://localhost:8080` (frontend) e `http://localhost:8080/swagger-ui.html` (Swagger). O container `aplicacao` não publica porta própria no host — o Nginx do container `frontend` faz proxy reverso das rotas da API (`/auth`, `/acoes`, `/carteira`, `/corretoras`, `/proventos`, `/actuator`, `/swagger-ui`, `/v3/api-docs`) para ele pela rede interna do Compose. Se `POSTGRES_PORT`/`APP_PORT` estiverem ocupadas, altere-as no `.env` — a comunicação interna entre os containers continua em `postgres:5432` e `aplicacao:8080`.
+
+Parar sem apagar dados / retomar / remover containers (mantendo o volume) / apagar também o banco:
+
+```bash
+docker compose stop
+docker compose start
+docker compose down            # preserva o volume postgres_data
+docker compose down --volumes  # apaga também o banco
+```
+
+Após alterar código Java, reconstrua apenas o serviço da aplicação:
+
+```bash
+docker compose up -d --build aplicacao
+```
+
+Para trabalhar pela IDE mantendo só o banco em container:
+
+```bash
+docker compose up -d postgres
+```
+
+Nesse caso, no IntelliJ use `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:${POSTGRES_PORT:-5432}/gestao_acoes` (ou o `.env` já usado para execução local), já que fora do Compose o hostname `postgres` não existe.
+
 ## Executando os testes
 
 ```bash
