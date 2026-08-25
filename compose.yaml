@@ -49,5 +49,16 @@ services:
     ports:
       - "${APP_PORT:-8080}:8080"
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: gestao-acoes-frontend:local
+    restart: unless-stopped
+    depends_on:
+      - aplicacao
+    ports:
+      - "${FRONTEND_PORT:-4200}:80"
+
 volumes:
   postgres_data:

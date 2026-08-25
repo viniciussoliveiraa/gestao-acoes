@@ -1,0 +1,20 @@
+# Controle de versao e configuracoes das IDEs
+.git
+.gitignore
+.idea
+.vscode
+*.iml
+
+# Dependencias e build (reconstruidos dentro da imagem)
+node_modules
+dist
+.angular
+
+# Segredos e configuracoes locais
+.env
+.env.*
+
+# Arquivos que nao sao necessarios para compilar o frontend
+README.md
+.DS_Store
+**/.DS_Store
