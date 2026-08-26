@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
+
+    <!-- O changeSet 001-create-corretora-mysql já foi commitado e executado, por isso é
+         imutável (ver Aula 11 - Liquibase); esta correção é um changeSet novo em vez de uma
+         edição do original. Liquibase mapeia BOOLEAN para TINYINT(1) em MySQL, mas o dialeto
+         MySQL do Hibernate 7 espera BIT para um campo boolean — sem isso, a validação do schema
+         (ddl-auto=validate) falha com SchemaManagementException. -->
+    <changeSet id="006-fix-corretora-validada-cvm-mysql" author="gestao-acoes" context="mysql">
+        <modifyDataType tableName="corretora" columnName="validada_cvm" newDataType="BIT"/>
+        <rollback>
+            <modifyDataType tableName="corretora" columnName="validada_cvm" newDataType="BOOLEAN"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
