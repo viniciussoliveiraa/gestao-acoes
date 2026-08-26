@@ -12,6 +12,8 @@ export class AuthService {
     localStorage.getItem(CHAVE_TOKEN) ?? sessionStorage.getItem(CHAVE_TOKEN)
   );
   readonly autenticado = computed(() => this.tokenSignal() !== null);
+  /** Extraído do claim `email` do JWT (não requer chamada extra à API). */
+  readonly emailUsuario = computed(() => this.decodificarEmail(this.tokenSignal()));
 
   constructor(private readonly http: HttpClient) {}
 
@@ -40,5 +42,18 @@ export class AuthService {
     (lembrar ? sessionStorage : localStorage).removeItem(CHAVE_TOKEN);
     (lembrar ? localStorage : sessionStorage).setItem(CHAVE_TOKEN, token);
     this.tokenSignal.set(token);
+  }
+
+  private decodificarEmail(token: string | null): string | null {
+    if (!token) {
+      return null;
+    }
+    try {
+      const payload = token.split('.')[1];
+      const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return (JSON.parse(json).email as string | undefined) ?? null;
+    } catch {
+      return null;
+    }
   }
 }

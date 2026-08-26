@@ -61,6 +61,40 @@
   </form>
 </div>
 
+@if (quantidadeLancamentos() > 0) {
+  <div class="lancamentos__stats">
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>account_balance_wallet</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Total investido</span>
+        <span class="stat-card__valor">{{ totalInvestido() | currency: 'BRL' }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>receipt_long</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Lançamentos</span>
+        <span class="stat-card__valor">{{ quantidadeLancamentos() | number: '1.0-0' }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>equalizer</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Ticket médio</span>
+        <span class="stat-card__valor">{{ ticketMedio() | currency: 'BRL' }}</span>
+      </div>
+    </div>
+  </div>
+}
+
 <h2 class="section-title">Histórico</h2>
 
 @if (lancamentos().length === 0) {
@@ -99,5 +133,14 @@
       <tr mat-header-row *matHeaderRowDef="colunas"></tr>
       <tr mat-row *matRowDef="let row; columns: colunas"></tr>
     </table>
+
+    <mat-paginator
+      [length]="totalElementos()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 20, 50]"
+      (page)="onPageChange($event)"
+      aria-label="Selecionar página do histórico de lançamentos"
+    />
   </div>
 }

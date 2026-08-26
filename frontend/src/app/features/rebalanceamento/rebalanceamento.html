@@ -16,6 +16,10 @@
     <mat-icon>balance</mat-icon>
     <p>Você ainda não tem posições na carteira.</p>
     <p>Cadastre lançamentos para poder planejar o rebalanceamento.</p>
+    <a mat-flat-button color="primary" routerLink="/lancamentos" class="empty-state__acao">
+      <mat-icon>add</mat-icon>
+      Registrar lançamento
+    </a>
   </div>
 } @else {
   <div class="surface-card form-card rebalanceamento__controles">

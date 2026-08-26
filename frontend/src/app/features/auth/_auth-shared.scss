@@ -9,32 +9,109 @@
 }
 
 .auth-page__form {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem 1.5rem;
   background: var(--app-bg);
+  overflow: hidden;
+  // Sombra suave na borda esquerda — esconde o corte reto entre o hero
+  // escuro e o painel claro, como se a luz do hero vazasse um pouco pra cá.
+  box-shadow: inset 24px 0 30px -28px rgba(20, 15, 5, 0.35);
+
+  @media (max-width: 900px) {
+    box-shadow: none;
+  }
+}
+
+// Grade de pontos + brilho radial dourado atrás do cartão — ecoa o hero
+// escuro do lado esquerdo pra o painel claro não parecer um vazio à parte.
+.auth-page__form::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--app-text-faint) 1px, transparent 1px);
+  background-size: 26px 26px;
+  opacity: 0.25;
+  -webkit-mask-image: radial-gradient(ellipse 55% 55% at 50% 42%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse 55% 55% at 50% 42%, #000 0%, transparent 72%);
+  pointer-events: none;
+}
+
+.auth-page__form::after {
+  content: '';
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  left: 50%;
+  top: 44%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--app-primary-soft) 0%, transparent 70%);
+  pointer-events: none;
+  animation: authFormGlowPulse 6s ease-in-out infinite;
+}
+
+// O cartão parece "flutuar num poço de luz" — o brilho atrás dele respira
+// lentamente, bem devagar, pra não competir com o resto da cena.
+@keyframes authFormGlowPulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.18);
+    opacity: 0.65;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-page__form::after {
+    animation: none;
+  }
 }
 
 .auth-card {
   position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 380px;
-  padding: 2.25rem;
   border-radius: var(--app-radius-lg);
   overflow: hidden;
   box-shadow: var(--app-shadow-md);
   animation: authCardIn 0.5s ease-out;
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
 }
 
+.auth-card:hover {
+  box-shadow:
+    var(--app-shadow-hero),
+    0 0 34px -6px rgba(163, 140, 101, 0.5);
+  transform: translateY(-3px);
+}
+
+// Anel de luz dourada/verde girando: uma camada bem maior que o cartão fica
+// por trás, girando com transform: rotate() (funciona em qualquer
+// navegador). Como o miolo branco (.auth-card__inner) cobre quase tudo,
+// só sobra um contorno fino de ~2.5px do gradiente aparecendo — daí o
+// efeito de "anel de luz" ao invés de uma mancha de cor.
 .auth-card::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--app-gradient-primary);
+  inset: -200px;
+  background: conic-gradient(from 0deg, #d3b583, #009974, #8a7454, #d3b583, #009974, #8a7454, #d3b583);
+  animation: authCardGlowSpin 5s linear infinite;
+}
+
+.auth-card__inner {
+  position: relative;
+  margin: 2.5px;
+  padding: 2.25rem;
+  border-radius: calc(var(--app-radius-lg) - 2.5px);
+  background: var(--app-surface);
 }
 
 @keyframes authCardIn {
@@ -48,9 +125,20 @@
   }
 }
 
+@keyframes authCardGlowSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .auth-card {
+  .auth-card,
+  .auth-card::before {
     animation: none;
+  }
+
+  .auth-card::before {
+    background: var(--app-gradient-primary);
   }
 }
 
@@ -67,9 +155,47 @@
   }
 }
 
+.auth-card__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px 4px 9px;
+  margin-bottom: 1rem;
+  border-radius: var(--app-radius-pill);
+  background: var(--app-primary-soft);
+  color: var(--app-primary-dark);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  animation: authFieldIn 0.45s ease-out backwards;
+}
+
+.auth-card__kicker mat-icon {
+  font-size: 13px;
+  width: 13px;
+  height: 13px;
+}
+
 .auth-card h1 {
   margin: 0 0 0.25rem;
   font-size: 1.6rem;
+}
+
+.auth-card__accent {
+  background: var(--app-gradient-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.auth-card__greeting-icon {
+  vertical-align: -5px;
+  margin-right: 2px;
+  color: var(--app-primary);
+  font-size: 1.35rem;
+  width: 1.35rem;
+  height: 1.35rem;
 }
 
 .auth-card__lead {
@@ -86,15 +212,117 @@
 }
 
 .auth-card__rodape a {
+  position: relative;
   color: var(--app-primary);
   font-weight: 600;
   text-decoration: none;
+}
+
+.auth-card__rodape a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1.5px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.25s ease;
+}
+
+.auth-card__rodape a:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-card__rodape a::after {
+    transition: none;
+  }
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.auth-form mat-form-field [matPrefix] {
+  color: var(--app-text-faint);
+  margin-right: 8px;
+  transition: color 0.15s ease;
+}
+
+.auth-form mat-form-field.mat-focused [matPrefix] {
+  color: var(--app-primary);
+}
+
+.auth-form__valid-icon {
+  color: var(--app-positive);
+  font-size: 19px;
+  width: 19px;
+  height: 19px;
+  animation: authFieldValidIn 0.25s ease-out;
+}
+
+@keyframes authFieldValidIn {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Entrada escalonada dos campos ao carregar a tela — pequeno toque de vida
+// que ecoa o stagger da lista de features do hero.
+.auth-form mat-form-field,
+.auth-form mat-checkbox,
+.auth-form button[type='submit'] {
+  animation: authFieldIn 0.45s ease-out backwards;
+}
+
+.auth-form mat-form-field:nth-of-type(1) {
+  animation-delay: 0.05s;
+}
+
+.auth-form mat-form-field:nth-of-type(2) {
+  animation-delay: 0.12s;
+}
+
+.auth-form mat-form-field:nth-of-type(3) {
+  animation-delay: 0.19s;
+}
+
+.auth-form mat-checkbox {
+  animation-delay: 0.22s;
+}
+
+.auth-form button[type='submit'] {
+  animation-delay: 0.3s;
+}
+
+@keyframes authFieldIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-form mat-form-field,
+  .auth-form mat-checkbox,
+  .auth-form button[type='submit'],
+  .auth-card__kicker {
+    animation: none;
+  }
 }
 
 .auth-form__lembrar {
@@ -157,6 +385,29 @@
 
 .auth-form button[type='submit']:hover::after {
   left: 130%;
+}
+
+.auth-form__cta {
+  display: inline-flex;
+  align-items: center;
+}
+
+.auth-form__cta-arrow {
+  font-size: 18px;
+  width: 0;
+  height: 18px;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    width 0.25s ease,
+    opacity 0.2s ease,
+    margin-left 0.25s ease;
+}
+
+.auth-form button[type='submit']:hover .auth-form__cta-arrow {
+  width: 18px;
+  opacity: 1;
+  margin-left: 6px;
 }
 
 @media (prefers-reduced-motion: reduce) {

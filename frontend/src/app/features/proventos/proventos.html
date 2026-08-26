@@ -56,6 +56,40 @@
   </form>
 </div>
 
+@if (todosProventos().length > 0) {
+  <div class="proventos__stats">
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--positivo">
+        <mat-icon>paid</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Total recebido</span>
+        <span class="stat-card__valor">{{ totalRecebido() | currency: 'BRL' }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>savings</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Dividendos</span>
+        <span class="stat-card__valor">{{ totalDividendos() | currency: 'BRL' }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>receipt_long</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">JCP</span>
+        <span class="stat-card__valor">{{ totalJcp() | currency: 'BRL' }}</span>
+      </div>
+    </div>
+  </div>
+}
+
 <h2 class="section-title">Histórico</h2>
 
 @if (proventos().length === 0) {
@@ -89,5 +123,14 @@
       <tr mat-header-row *matHeaderRowDef="colunas"></tr>
       <tr mat-row *matRowDef="let row; columns: colunas"></tr>
     </table>
+
+    <mat-paginator
+      [length]="totalElementos()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 20, 50]"
+      (page)="onPageChange($event)"
+      aria-label="Selecionar página do histórico de proventos"
+    />
   </div>
 }

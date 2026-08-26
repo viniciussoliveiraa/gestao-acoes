@@ -1,5 +1,6 @@
 :host {
   position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -20,6 +21,19 @@
   @media (max-width: 900px) {
     display: none;
   }
+}
+
+// Grão bem sutil por cima de tudo — quebra o degradê liso e dá uma
+// textura "editorial" ao painel escuro, sem chamar atenção pra si mesmo.
+:host::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 @keyframes authHeroGradientDrift {
@@ -48,7 +62,17 @@
 .auth-hero__orbs {
   position: absolute;
   inset: 0;
-  transition: transform 0.2s ease-out;
+  pointer-events: none;
+}
+
+// Cada orb vive numa camada própria: a camada recebe o deslocamento do mouse
+// (via JS, em tempo real) e o orb dentro dela flutua sozinho via keyframes —
+// separar os dois evita que a animação CSS "brigue" com o transform do
+// parallax e permite que cada bolha se mova a uma profundidade diferente.
+.auth-hero__orb-layer {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.25s ease-out;
   will-change: transform;
 }
 
@@ -56,7 +80,6 @@
   position: absolute;
   display: block;
   border-radius: 50%;
-  filter: blur(70px);
   pointer-events: none;
   animation: authHeroFloat 14s ease-in-out infinite alternate;
 }
@@ -66,8 +89,9 @@
   height: 260px;
   top: -60px;
   right: -40px;
-  background: var(--app-primary-light);
-  opacity: 0.35;
+  background: radial-gradient(circle at 38% 35%, var(--app-primary-light) 0%, rgba(211, 181, 131, 0) 72%);
+  filter: blur(55px);
+  opacity: 0.45;
 }
 
 .auth-hero__orb--2 {
@@ -75,9 +99,23 @@
   height: 220px;
   bottom: -50px;
   left: -30px;
-  background: var(--app-positive);
-  opacity: 0.22;
+  background: radial-gradient(circle at 42% 40%, var(--app-positive) 0%, rgba(0, 153, 116, 0) 72%);
+  filter: blur(60px);
+  opacity: 0.28;
+  animation-duration: 17s;
   animation-delay: -7s;
+}
+
+.auth-hero__orb--3 {
+  width: 160px;
+  height: 160px;
+  top: 38%;
+  left: 6%;
+  background: radial-gradient(circle at 45% 45%, #fff3df 0%, rgba(255, 243, 223, 0) 72%);
+  filter: blur(45px);
+  opacity: 0.14;
+  animation-duration: 11s;
+  animation-delay: -3s;
 }
 
 @keyframes authHeroFloat {
@@ -193,23 +231,60 @@
   }
 }
 
-// Cartão "glass" decorativo — uma prévia ilustrativa do painel, sem números reais.
-.auth-hero__preview {
+// Cartão "glass" decorativo — uma prévia ilustrativa do painel, sem números
+// reais. A camada externa (-tilt) recebe a inclinação 3D controlada pelo
+// mouse; o cartão em si mantém sua própria flutuação via keyframes — os dois
+// transforms se compõem porque vivem em elementos diferentes.
+.auth-hero__preview-tilt {
   position: absolute;
   top: 2.75rem;
   right: 2.75rem;
   z-index: 1;
-  width: 132px;
-  padding: 0.9rem;
-  border-radius: var(--app-radius-md);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 16px 34px -12px rgba(0, 0, 0, 0.45);
-  animation: authHeroPreviewFloat 6s ease-in-out infinite;
+  perspective: 900px;
+  transition: transform 0.2s ease-out;
 
   @media (max-width: 1150px) {
     display: none;
+  }
+}
+
+.auth-hero__preview {
+  width: 148px;
+  padding: 0.9rem;
+  border-radius: var(--app-radius-md);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(14px) saturate(160%);
+  box-shadow:
+    0 16px 34px -12px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  animation: authHeroPreviewFloat 6s ease-in-out infinite;
+}
+
+// Brilho que percorre o cartão uma única vez, pouco depois do card entrar
+// em cena — reforça a leitura de "vidro" sem ficar repetitivo.
+.auth-hero__preview::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+  animation: authHeroPreviewShine 2.4s ease-in-out 1.3s 1;
+}
+
+@keyframes authHeroPreviewShine {
+  0% {
+    left: -60%;
+  }
+  40%,
+  100% {
+    left: 140%;
   }
 }
 
@@ -226,13 +301,20 @@
 .auth-hero__preview-header {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: space-between;
+  gap: 0.4rem;
   margin-bottom: 0.75rem;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.75);
+}
+
+.auth-hero__preview-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .auth-hero__preview-header mat-icon {
@@ -242,16 +324,103 @@
   color: var(--app-primary-light);
 }
 
+.auth-hero__preview-trend {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--app-radius-pill);
+  background: rgba(79, 209, 165, 0.18);
+  color: #4fd1a5;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .auth-hero__preview-donut {
-  width: 54px;
-  height: 54px;
-  margin: 0 auto 0.8rem;
+  position: relative;
+  z-index: 1;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 0.85rem;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: conic-gradient(
     var(--app-primary-light) 0deg 150deg,
     var(--app-positive) 150deg 235deg,
     rgba(255, 255, 255, 0.22) 235deg 360deg
   );
+  animation: authHeroPreviewDonutIn 0.7s ease-out 0.3s backwards;
+}
+
+.auth-hero__preview-donut::before {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background: #241d15;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.auth-hero__preview-donut-center {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+
+.auth-hero__preview-donut-center strong {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.auth-hero__preview-donut-center span {
+  font-size: 0.44rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 1px;
+}
+
+@keyframes authHeroPreviewDonutIn {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-30deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.auth-hero__preview-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.auth-hero__preview-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.auth-hero__preview-legend i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .auth-hero__preview-bars {
@@ -265,61 +434,229 @@
   flex: 1;
   border-radius: 3px 3px 0 0;
   background: linear-gradient(180deg, var(--app-primary-light), rgba(211, 181, 131, 0.25));
+  animation: authHeroPreviewBarIn 0.5s ease-out backwards;
+  transform-origin: bottom;
 }
 
 .auth-hero__preview-bars span:nth-child(1) {
   height: 45%;
+  animation-delay: 0.55s;
 }
 .auth-hero__preview-bars span:nth-child(2) {
   height: 70%;
+  animation-delay: 0.62s;
 }
 .auth-hero__preview-bars span:nth-child(3) {
   height: 55%;
+  animation-delay: 0.69s;
 }
 .auth-hero__preview-bars span:nth-child(4) {
   height: 92%;
+  animation-delay: 0.76s;
 }
 
-// Faixa estilo "ticker de pregão" — puramente decorativa, os símbolos não refletem cotações reais.
+@keyframes authHeroPreviewBarIn {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+// Cartão "atividade recente" — alterna mensagens decorativas simulando um
+// feed de eventos da carteira (compra, provento, rebalanceamento), reforçando
+// visualmente os recursos do produto sem serem dados reais.
+.auth-hero__toast {
+  position: absolute;
+  right: 2.75rem;
+  bottom: 3.9rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 218px;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--app-radius-md);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(14px) saturate(160%);
+  box-shadow:
+    0 14px 30px -12px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation:
+    authHeroToastIn 0.5s ease-out 0.7s backwards,
+    authHeroToastFloat 5s ease-in-out 1.2s infinite;
+
+  @media (max-width: 1150px) {
+    display: none;
+  }
+}
+
+.auth-hero__toast-icon-wrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: var(--app-gradient-primary);
+}
+
+.auth-hero__toast-icon-wrap mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: #fff;
+}
+
+.auth-hero__toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.auth-hero__toast-label {
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.auth-hero__toast-text {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes authHeroToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes authHeroToastFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+// Faixa estilo "ticker de pregão" — puramente decorativa, os símbolos e
+// variações não refletem cotações reais.
 .auth-hero__ticker {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 2;
-  height: 28px;
-  overflow: hidden;
-  background: rgba(10, 8, 4, 0.35);
+  height: 30px;
+  display: flex;
+  align-items: stretch;
+  background: rgba(10, 8, 4, 0.4);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+}
+
+.auth-hero__ticker-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 0 0.85rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: rgba(255, 255, 255, 0.55);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+}
+
+.auth-hero__ticker-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4fd1a5;
+  animation: authHeroLiveDot 1.8s ease-in-out infinite;
+}
+
+@keyframes authHeroLiveDot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 209, 165, 0.55);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(79, 209, 165, 0);
+    opacity: 0.7;
+  }
+}
+
+.auth-hero__ticker-viewport {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
 }
 
 .auth-hero__ticker-track {
   display: flex;
+  align-items: center;
+  height: 100%;
   width: max-content;
-  animation: authHeroTickerScroll 24s linear infinite;
+  animation: authHeroTickerScroll 26s linear infinite;
+}
+
+.auth-hero__ticker:hover .auth-hero__ticker-track {
+  animation-play-state: paused;
 }
 
 .auth-hero__ticker-item {
   display: flex;
   align-items: center;
-  gap: 0.1rem;
+  gap: 0.5rem;
   padding: 0 1.1rem;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.78);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
-.auth-hero__ticker-item mat-icon {
+.auth-hero__ticker-variacao {
+  display: inline-flex;
+  align-items: center;
+  color: #4fd1a5;
+  font-weight: 800;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+}
+
+.auth-hero__ticker-variacao--baixa {
+  color: #f28fa0;
+}
+
+.auth-hero__ticker-variacao mat-icon {
   font-size: 16px;
   width: 16px;
   height: 16px;
-  color: #4fd1a5;
-}
-
-.auth-hero__ticker-icon--baixa {
-  color: #f28fa0;
 }
 
 @keyframes authHeroTickerScroll {
@@ -330,6 +667,7 @@
     transform: translateX(-50%);
   }
 }
+
 
 .auth-hero__content {
   position: relative;
@@ -349,6 +687,7 @@
   border-radius: 16px;
   background: var(--app-gradient-primary);
   box-shadow: 0 10px 24px -6px rgba(138, 116, 84, 0.65);
+  animation: authHeroContentIn 0.5s ease-out backwards;
 }
 
 .auth-hero__icon::before {
@@ -383,12 +722,25 @@ h2 {
   margin: 0;
   max-width: 420px;
   line-height: 1.25;
+  animation: authHeroContentIn 0.5s ease-out 0.08s backwards;
 }
 
 p {
   color: rgba(255, 255, 255, 0.65);
   max-width: 400px;
   line-height: 1.6;
+  animation: authHeroContentIn 0.5s ease-out 0.16s backwards;
+}
+
+@keyframes authHeroContentIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-hero__features {
@@ -436,16 +788,56 @@ p {
   height: 20px;
 }
 
+// Número ilustrativo — reforça a percepção de "plataforma em uso de
+// verdade" sem ser um dado real. Sobe animado de 0 até o valor final
+// (via JS) quando a tela carrega.
+.auth-hero__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: 1.4rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  animation: authHeroContentIn 0.5s ease-out 0.75s backwards;
+}
+
+.auth-hero__stat-value {
+  font-family: Figtree, Nunito, sans-serif;
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(90deg, #fff, var(--app-primary-light));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.auth-hero__stat-label {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
 @media (prefers-reduced-motion: reduce) {
   :host,
+  :host::after,
   .auth-hero__orb,
   .auth-hero__chart-area,
   .auth-hero__chart-line,
   .auth-hero__chart-dot,
+  .auth-hero__icon,
   .auth-hero__icon::before,
+  h2,
+  p,
   .auth-hero__feature,
   .auth-hero__preview,
-  .auth-hero__ticker-track {
+  .auth-hero__preview::after,
+  .auth-hero__preview-donut,
+  .auth-hero__preview-bars span,
+  .auth-hero__ticker-track,
+  .auth-hero__ticker-live-dot,
+  .auth-hero__toast,
+  .auth-hero__stat {
     animation: none !important;
   }
 
@@ -457,7 +849,10 @@ p {
     opacity: 1;
   }
 
-  .auth-hero__feature {
+  .auth-hero__feature,
+  .auth-hero__icon,
+  h2,
+  p {
     opacity: 1;
     transform: none;
   }

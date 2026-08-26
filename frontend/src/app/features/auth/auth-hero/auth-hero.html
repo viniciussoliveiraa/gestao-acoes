@@ -4,9 +4,25 @@
   aria-hidden="true"
 ></div>
 
-<div class="auth-hero__orbs" [style.transform]="'translate(' + parallax().x + 'px, ' + parallax().y + 'px)'" aria-hidden="true">
-  <span class="auth-hero__orb auth-hero__orb--1"></span>
-  <span class="auth-hero__orb auth-hero__orb--2"></span>
+<div class="auth-hero__orbs" aria-hidden="true">
+  <span
+    class="auth-hero__orb-layer"
+    [style.transform]="'translate(' + parallax().x * 1.5 + 'px, ' + parallax().y * 1.5 + 'px)'"
+  >
+    <span class="auth-hero__orb auth-hero__orb--1"></span>
+  </span>
+  <span
+    class="auth-hero__orb-layer"
+    [style.transform]="'translate(' + parallax().x * 0.5 + 'px, ' + parallax().y * 0.5 + 'px)'"
+  >
+    <span class="auth-hero__orb auth-hero__orb--2"></span>
+  </span>
+  <span
+    class="auth-hero__orb-layer"
+    [style.transform]="'translate(' + parallax().x * 1.1 + 'px, ' + parallax().y * -1.1 + 'px)'"
+  >
+    <span class="auth-hero__orb auth-hero__orb--3"></span>
+  </span>
 </div>
 
 <svg class="auth-hero__chart" viewBox="0 0 400 140" preserveAspectRatio="none" aria-hidden="true">
@@ -29,28 +45,69 @@
   <circle class="auth-hero__chart-dot" cx="400" cy="24" r="4" />
 </svg>
 
-<div class="auth-hero__preview" aria-hidden="true">
-  <div class="auth-hero__preview-header">
-    <mat-icon>donut_large</mat-icon>
-    <span>Carteira</span>
+<div
+  class="auth-hero__preview-tilt"
+  aria-hidden="true"
+  [style.transform]="'rotateX(' + parallax().y * -0.4 + 'deg) rotateY(' + parallax().x * 0.4 + 'deg)'"
+>
+  <div class="auth-hero__preview">
+    <div class="auth-hero__preview-header">
+      <span class="auth-hero__preview-header-title">
+        <mat-icon>donut_large</mat-icon>
+        Carteira
+      </span>
+      <span class="auth-hero__preview-trend">+3,8%</span>
+    </div>
+
+    <div class="auth-hero__preview-donut">
+      <div class="auth-hero__preview-donut-center">
+        <strong>68%</strong>
+        <span>alocado</span>
+      </div>
+    </div>
+
+    <div class="auth-hero__preview-legend">
+      <span style="color: var(--app-primary-light)"><i></i>Ações</span>
+      <span style="color: var(--app-positive)"><i></i>FIIs</span>
+      <span style="color: rgba(255, 255, 255, 0.4)"><i></i>Caixa</span>
+    </div>
+
+    <div class="auth-hero__preview-bars">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
   </div>
-  <div class="auth-hero__preview-donut"></div>
-  <div class="auth-hero__preview-bars">
-    <span></span>
-    <span></span>
-    <span></span>
-    <span></span>
+</div>
+
+<div class="auth-hero__toast" aria-hidden="true">
+  <span class="auth-hero__toast-icon-wrap">
+    <mat-icon>{{ notificacaoAtual().icone }}</mat-icon>
+  </span>
+  <div class="auth-hero__toast-body">
+    <span class="auth-hero__toast-label">Atividade recente</span>
+    <span class="auth-hero__toast-text">{{ notificacaoAtual().texto }}</span>
   </div>
 </div>
 
 <div class="auth-hero__ticker" aria-hidden="true">
-  <div class="auth-hero__ticker-track">
-    @for (item of tickers; track $index) {
-      <span class="auth-hero__ticker-item">
-        <strong>{{ item.simbolo }}</strong>
-        <mat-icon [class.auth-hero__ticker-icon--baixa]="!item.alta">{{ item.alta ? 'arrow_drop_up' : 'arrow_drop_down' }}</mat-icon>
-      </span>
-    }
+  <span class="auth-hero__ticker-live">
+    <span class="auth-hero__ticker-live-dot"></span>
+    Ao vivo
+  </span>
+  <div class="auth-hero__ticker-viewport">
+    <div class="auth-hero__ticker-track">
+      @for (item of tickers; track $index) {
+        <span class="auth-hero__ticker-item">
+          <strong>{{ item.simbolo }}</strong>
+          <span class="auth-hero__ticker-variacao" [class.auth-hero__ticker-variacao--baixa]="!item.alta">
+            <mat-icon>{{ item.alta ? 'arrow_drop_up' : 'arrow_drop_down' }}</mat-icon>
+            {{ item.alta ? '+' : '' }}{{ item.variacao }}%
+          </span>
+        </span>
+      }
+    </div>
   </div>
 </div>
 
@@ -79,5 +136,10 @@
       <mat-icon>balance</mat-icon>
       <span>Simulador de rebalanceamento</span>
     </div>
+  </div>
+
+  <div class="auth-hero__stat" aria-hidden="true">
+    <span class="auth-hero__stat-value">R$ {{ valorGeridoFormatado() }}</span>
+    <span class="auth-hero__stat-label">sob gestão na plataforma</span>
   </div>
 </div>

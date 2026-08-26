@@ -34,7 +34,9 @@ export class Login {
   protected readonly sucesso = signal(false);
   protected readonly erro = signal<string | null>(null);
   protected readonly mostrarSenha = signal(false);
-  protected readonly saudacao = this.saudacaoPorHorario();
+  private readonly saudacaoInfo = this.saudacaoPorHorario();
+  protected readonly saudacao = this.saudacaoInfo.texto;
+  protected readonly saudacaoIcone = this.saudacaoInfo.icone;
 
   private readonly fb = inject(FormBuilder);
 
@@ -73,14 +75,14 @@ export class Login {
     });
   }
 
-  private saudacaoPorHorario(): string {
+  private saudacaoPorHorario(): { texto: string; icone: string } {
     const hora = new Date().getHours();
     if (hora < 12) {
-      return 'Bom dia';
+      return { texto: 'Bom dia', icone: 'wb_twilight' };
     }
     if (hora < 18) {
-      return 'Boa tarde';
+      return { texto: 'Boa tarde', icone: 'wb_sunny' };
     }
-    return 'Boa noite';
+    return { texto: 'Boa noite', icone: 'bedtime' };
   }
 }

@@ -1,6 +1,7 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -30,6 +31,7 @@ const CHAVE_METAS_LOCALSTORAGE = 'gestao-acoes:metas-alocacao';
     CurrencyPipe,
     DecimalPipe,
     FormsModule,
+    RouterLink,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,

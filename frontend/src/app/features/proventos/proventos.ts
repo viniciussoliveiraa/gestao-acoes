@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
@@ -28,6 +29,7 @@ import { ProventoResponse, TipoProvento } from '../../core/models/provento.model
     MatIconModule,
     MatInputModule,
     MatNativeDateModule,
+    MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
@@ -41,6 +43,25 @@ export class Proventos implements OnInit {
   protected readonly enviando = signal(false);
   protected readonly erro = signal<string | null>(null);
   protected readonly sucesso = signal<string | null>(null);
+
+  // Lista completa (não paginada) só pra alimentar os totais do resumo — a
+  // tabela em si usa a página atual, retornada pelo backend.
+  protected readonly todosProventos = signal<ProventoResponse[]>([]);
+  protected readonly totalRecebido = computed(() => this.todosProventos().reduce((total, p) => total + p.valorTotal, 0));
+  protected readonly totalDividendos = computed(() =>
+    this.todosProventos()
+      .filter((p) => p.tipo === 'DIVIDENDO')
+      .reduce((total, p) => total + p.valorTotal, 0)
+  );
+  protected readonly totalJcp = computed(() =>
+    this.todosProventos()
+      .filter((p) => p.tipo === 'JCP')
+      .reduce((total, p) => total + p.valorTotal, 0)
+  );
+
+  protected readonly totalElementos = signal(0);
+  protected readonly pageIndex = signal(0);
+  protected readonly pageSize = signal(10);
 
   protected readonly tipos: TipoProvento[] = ['DIVIDENDO', 'JCP'];
   protected readonly colunas = ['tickerAcao', 'tipo', 'valorTotal', 'dataPagamento'];
@@ -61,6 +82,13 @@ export class Proventos implements OnInit {
 
   ngOnInit(): void {
     this.acaoService.listar(0, 100).subscribe((pagina) => this.acoes.set(pagina.content));
+    this.carregarProventos();
+    this.carregarTotais();
+  }
+
+  protected onPageChange(evento: PageEvent): void {
+    this.pageIndex.set(evento.pageIndex);
+    this.pageSize.set(evento.pageSize);
     this.carregarProventos();
   }
 
@@ -87,7 +115,9 @@ export class Proventos implements OnInit {
           this.enviando.set(false);
           this.sucesso.set('Provento registrado com sucesso.');
           this.form.reset({ tipo: 'DIVIDENDO' });
+          this.pageIndex.set(0);
           this.carregarProventos();
+          this.carregarTotais();
         },
         error: (erro) => {
           this.enviando.set(false);
@@ -97,7 +127,14 @@ export class Proventos implements OnInit {
   }
 
   private carregarProventos(): void {
-    this.proventoService.listar(0, 20).subscribe((pagina) => this.proventos.set(pagina.content));
+    this.proventoService.listar(this.pageIndex(), this.pageSize()).subscribe((pagina) => {
+      this.proventos.set(pagina.content);
+      this.totalElementos.set(pagina.totalElements);
+    });
+  }
+
+  private carregarTotais(): void {
+    this.proventoService.listar(0, 1000).subscribe((pagina) => this.todosProventos.set(pagina.content));
   }
 
   private formatarData(data: Date): string {

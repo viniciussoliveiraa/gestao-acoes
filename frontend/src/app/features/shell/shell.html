@@ -51,9 +51,21 @@
 
   <mat-sidenav-content class="shell__body">
     <mat-toolbar class="shell__toolbar">
+      <div class="shell__toolbar-title">
+        <mat-icon>{{ pagina().icone }}</mat-icon>
+        <span>{{ pagina().titulo }}</span>
+      </div>
+
       <span class="shell__spacer"></span>
+
       @if (authService.autenticado()) {
-        <button mat-stroked-button class="shell__logout" (click)="sair()">
+        @if (saudacaoNome(); as nome) {
+          <span class="shell__user">
+            <span class="shell__user-avatar">{{ nome.charAt(0).toUpperCase() }}</span>
+            <span class="shell__user-nome">{{ nome }}</span>
+          </span>
+        }
+        <button mat-stroked-button color="primary" class="shell__logout" (click)="sair()">
           <mat-icon>logout</mat-icon>
           Sair
         </button>

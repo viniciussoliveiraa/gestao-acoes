@@ -1,5 +1,7 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ChartConfiguration, ChartData, Plugin, ScriptableContext } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
@@ -19,7 +21,7 @@ interface ItemDistribuicao {
 
 @Component({
   selector: 'app-graficos',
-  imports: [CurrencyPipe, DecimalPipe, MatIconModule, BaseChartDirective],
+  imports: [CurrencyPipe, DecimalPipe, RouterLink, MatButtonModule, MatIconModule, BaseChartDirective],
   templateUrl: './graficos.html',
   styleUrl: './graficos.scss',
 })
