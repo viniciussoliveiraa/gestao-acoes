@@ -1,6 +1,6 @@
 # Frontend — Sistema de Gestão de Ações
 
-Interface Angular (standalone components, Angular 22) para o [backend Spring Boot](../README.md): login/cadastro, dashboard de carteira (Resumo, Lançamentos, Proventos, Gráficos) e CRUD de Corretoras/Ações. Gerado com Angular CLI e detalhado em `openspec/changes/adicionar-carteira-auth-frontend-angular/`.
+Interface Angular (standalone components, Angular 22) para o [backend Spring Boot](../README.md): login/cadastro, dashboard de carteira (Resumo, Lançamentos, Proventos, Gráficos, Rebalanceamento) e cadastro/listagem de Corretoras/Ações. Gerado com Angular CLI e detalhado em `openspec/changes/adicionar-carteira-auth-frontend-angular/`.
 
 ## Pré-requisitos
 
@@ -20,18 +20,20 @@ npm start   # equivalente a `ng serve`, sobe em http://localhost:4200
 
 1. Abra `http://localhost:4200` → redireciona para `/login`.
 2. Cadastre-se em "Cadastre-se" ou faça login (token JWT armazenado no navegador).
-3. **Corretoras** e **Ações** podem ser cadastradas sem login (endpoints públicos no backend) — cadastre ao menos uma de cada para poder registrar lançamentos.
+3. **Corretoras** e **Ações** podem ser cadastradas sem login (endpoints públicos no backend, só cadastro + listagem — sem edição/exclusão) — cadastre ao menos uma de cada para poder registrar lançamentos.
 4. **Lançamentos**: registre uma compra (ação + corretora + quantidade + preço + data).
 5. **Resumo**: mostra a posição consolidada calculada a partir dos lançamentos.
 6. **Proventos**: registre dividendos/JCP recebidos.
 7. **Gráficos**: alocação por ativo e evolução do valor investido.
+8. **Rebalanceamento**: defina metas de alocação (%) por ativo e veja a sugestão de aporte para se aproximar da meta; as metas ficam salvas só no navegador (`localStorage`), não no backend.
 
 ## Estrutura
 
 ```
 src/app/
   core/
-    guards/        authGuard (protege Resumo/Lançamentos/Proventos/Gráficos)
+    guards/        authGuard (protege Resumo/Lançamentos/Proventos/Gráficos/Rebalanceamento)
+    i18n/          textos do paginator do Angular Material em pt-BR
     interceptors/  authInterceptor (anexa Bearer token, trata 401 global)
     models/        interfaces TypeScript espelhando os DTOs do backend
     services/      um serviço HTTP por recurso (Auth, Carteira, Provento, Corretora, Acao)
@@ -42,8 +44,9 @@ src/app/
     lancamentos/   formulário + histórico de compras
     proventos/     formulário + histórico de proventos
     graficos/      alocação (donut) e evolução (linha), via ng2-charts/Chart.js
-    corretoras/    CRUD de corretoras (público)
-    acoes/         CRUD de ações (público)
+    rebalanceamento/ metas de alocação por ativo (localStorage) e sugestão de aporte
+    corretoras/    cadastro e listagem de corretoras (público, sem edição/exclusão)
+    acoes/         cadastro e listagem de ações (público, sem edição/exclusão)
 ```
 
 ## Build de produção
