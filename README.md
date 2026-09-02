@@ -4,6 +4,70 @@ API REST acadêmica para cadastro e consulta de corretoras e ações, com dados 
 
 Um frontend Angular consome esta API — ver [`frontend/README.md`](frontend/README.md) para instruções de execução.
 
+## Aderência ao enunciado do trabalho
+
+### Requisitos funcionais
+
+| # | Requisito | Status | Onde |
+|---|---|---|---|
+| RF01 | Cadastrar corretora a partir do CNPJ | ✅ | `POST /corretoras`, `CorretoraService.registrar` |
+| RF02 | Consultar dados cadastrais da corretora em API externa | ✅ | BrasilAPI CNPJ (`CnpjDataPort`/`BrasilApiCnpjAdapter`) |
+| RF03 | Validar se a corretora é instituição compatível com o mercado financeiro | ✅ | BrasilAPI CVM (`InstituicaoFinanceiraPort`/`BrasilApiCvmAdapter`) |
+| RF04 | Consultar e preencher endereço a partir do CEP | ✅ | ViaCEP (`EnderecoPort`/`ViaCepAdapter`) |
+| RF05 | Listar corretoras cadastradas | ✅ | `GET /corretoras` (paginado) |
+| RF06 | Buscar corretora por id e por CNPJ | ✅ | `GET /corretoras/{id}`, `GET /corretoras/cnpj/{cnpj}` |
+| RF07 | Cadastrar ação informando ticker e mercado | ✅ | `POST /acoes`, `AcaoService.registrar` |
+| RF08 | Consultar cotação da ação em API externa apropriada | ✅ | brapi.dev (BR) / Twelve Data ou Alpha Vantage (US), via `CotacaoStrategyResolver` |
+| RF09 | Listar ações cadastradas | ✅ | `GET /acoes` (paginado) |
+| RF10 | Buscar ação por ticker | ✅ | `GET /acoes/ticker/{ticker}` |
+| RF11 | Atualizar a cotação de uma ação já cadastrada | ✅ | `PUT /acoes/{id}/atualizar-cotacao` |
+| RF12 | Impedir cadastro duplicado de corretora por CNPJ e de ação por ticker | ✅ | `CorretoraDuplicadaException`/`AcaoDuplicadaException` → `409` |
+
+### Regras de negócio
+
+| # | Regra | Status | Observação |
+|---|---|---|---|
+| RN01 | CNPJ só é aceito se válido em formato e existir na base consultada | ✅ | Dígito verificador (`CnpjUtils`) + existência via BrasilAPI |
+| RN02 | Dados principais vêm da consulta externa, não de preenchimento manual | ✅ | `razaoSocial`, `nomeFantasia`, `situacaoCadastral`, endereço sempre vêm da API |
+| RN03 | Instituição não validada na CVM: cadastro é impedido | ✅ (decisão do grupo) | `InstituicaoNaoValidadaException` → `422`; trade-off documentado em `openspec/changes/criar-sistema-gestao-acoes/design.md` |
+| RN04 | CEP validado em API pública antes de salvar | ✅ | ViaCEP; CEP inexistente → `422` |
+| RN05 | Ação só é cadastrada se o ticker existir na API de cotação | ✅ | Ticker inexistente → `404` (`TickerNaoEncontradoException`) |
+| RN06 | Sistema distingue ativos BR e US, direcionando à API adequada | ✅ | Enum `Mercado` + `CotacaoStrategyResolver` (Strategy Pattern) |
+| RN07 | Não permite duas ações com o mesmo ticker | ✅ | Ticker único globalmente (índice único + verificação no service) |
+
+### Entidades
+
+- **Corretora**: `cnpj`, `razaoSocial`, `nomeFantasia`, `email`, `telefone`, `cep`, `logradouro`, `numero`, `complemento`, `bairro`, `cidade`, `uf`, `situacaoCadastral`, `validadaCvm`, `criadoEm`.
+- **Acao**: `ticker`, `nomeEmpresa`, `mercado`, `moeda`, `cotacaoAtual`, `dataHoraCotacao`, `provedorOrigem`, `criadoEm`.
+- Entidades adicionais (fora do mínimo pedido, suporte aos diferenciais de carteira/autenticação): `Usuario`, `Lancamento` (associa `Usuario` + `Acao` + `Corretora`) e `Provento`.
+
+### Diferenciais implementados (seção 11 do enunciado)
+
+| Diferencial | Status |
+|---|---|
+| Feign Client ou WebClient | ✅ Feign Client (`@FeignClient` em todos os adapters de integração) |
+| Testes unitários e/ou de integração | ✅ 121 testes (`@DataJpaTest`, `@WebMvcTest`, integração ponta a ponta, `MockWebServer`) |
+| Paginação nas listagens | ✅ `Pageable`/`Page` em corretoras, ações, lançamentos e proventos |
+| Logs estruturados | ✅ `CorrelationIdFilter` + padrão de log com `correlationId` |
+| Cache para consultas externas | ❌ Não implementado |
+| Dashboard simples (Thymeleaf ou frontend separado) | ✅ Frontend Angular separado (`frontend/`) |
+| Associação entre corretoras e carteiras de ações | ✅ `Lancamento` associa corretora, ação e usuário |
+| Histórico de cotações | ❌ Não implementado (fora de escopo, ver "Limitações conhecidas") |
+| Autenticação com Spring Security | ✅ JWT (`/auth/registrar`, `/auth/login`, filtro `JwtAuthenticationFilter`) |
+
+### Restrições (seção 14 do enunciado)
+
+- **Mínimo de 3 integrações externas reais**: são 5 — BrasilAPI (CNPJ), BrasilAPI (CVM), ViaCEP, brapi.dev e Twelve Data/Alpha Vantage.
+- **Cenários de falha tratados**: API externa fora do ar/indisponível → `502` (`IntegracaoExternaIndisponivelException`); ticker inexistente → `404`; CNPJ inválido (formato/dígito) → `400`; CNPJ não encontrado na base → `404`; CEP inválido → `400`; CEP inexistente → `404`/`422`; todos centralizados no `GlobalExceptionHandler` (`ProblemDetail`). Validado manualmente contra os provedores reais (ver `docs/roteiro-apresentacao.md`).
+
+### Entregáveis (seção 12 do enunciado)
+
+- Código-fonte completo: este repositório.
+- README com documentação das APIs usadas: seção [Integrações externas](#integrações-externas--limitações-e-observações-verificado-em-2026-08-12) abaixo.
+- Coleção de testes: `postman/gestao-acoes.postman_collection.json`.
+- Diagrama simplificado das entidades: `docs/diagramas.md`.
+- Roteiro para a apresentação prática: `docs/roteiro-apresentacao.md`.
+
 ## Pré-requisitos
 
 - Java 17 (Eclipse Temurin recomendado)
