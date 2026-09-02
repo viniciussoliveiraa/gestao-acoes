@@ -68,6 +68,43 @@ Um frontend Angular consome esta API — ver [`frontend/README.md`](frontend/REA
 - Diagrama simplificado das entidades: `docs/diagramas.md`.
 - Roteiro para a apresentação prática: `docs/roteiro-apresentacao.md`.
 
+### Aderência às aulas de apoio (variáveis de ambiente, Liquibase e Docker)
+
+O projeto segue os padrões ensinados em [`AULA-10-VARIAVEIS-DE-AMBIENTE`](https://github.com/jeffersonarpasserini/suporteos2025/blob/main/docs/aulas/AULA-10-VARIAVEIS-DE-AMBIENTE.md), [`AULA-11-LIQUIBASE`](https://github.com/jeffersonarpasserini/suporteos2025/blob/main/docs/aulas/AULA-11-LIQUIBASE.md) e [`AULA-12-DOCKER-E-CONTAINERS`](https://github.com/jeffersonarpasserini/suporteos2025/blob/main/docs/aulas/AULA-12-DOCKER-E-CONTAINERS.md), adaptados ao nome das variáveis nativas do Spring Boot (`SPRING_DATASOURCE_*` em vez de `DB_*`) e a três bancos em vez de um.
+
+**Aula 10 — Variáveis de ambiente**
+
+| Prática ensinada | Aplicada? |
+|---|---|
+| `.env.example` versionado, sem segredos reais | ✅ |
+| `.gitignore` com `.env` / `.env.*` / `!.env.example` | ✅ |
+| Placeholders `${VAR:padrao}` no `application.yml` | ✅ |
+| Senha do banco sem valor padrão (`${SPRING_DATASOURCE_PASSWORD}`) — app não sobe sem ela | ✅ |
+| Nenhum segredo real no histórico do Git | ✅ verificado (`git log --all` em `.env*`) |
+
+**Aula 11 — Liquibase**
+
+| Prática ensinada | Aplicada? |
+|---|---|
+| Changelog master + pasta `changes/` com changesets numerados | ✅ `db/changelog/db.changelog-master.xml` + `changes/001` a `006` |
+| `spring.jpa.hibernate.ddl-auto=validate` (Hibernate só confere, não cria schema) | ✅ em todos os perfis |
+| Changeset já executado nunca é editado; correção vira changeset novo | ✅ `006-fix-corretora-validada-cvm-mysql.xml` corrige o `005` sem alterá-lo |
+| Mesmo changelog roda em H2 (testes) e no banco real | ✅ perfil `test` usa o mesmo master |
+| Validado contra o banco de produção real do perfil (não só H2) | ✅ PostgreSQL sempre usado em `dev`; MySQL validado contra container real em 2026-09-01 (ver seção de perfis abaixo) |
+
+**Aula 12 — Docker e Docker Compose**
+
+| Prática ensinada | Aplicada? |
+|---|---|
+| `Dockerfile` multi-stage (build com Maven+JDK, runtime só com JRE) | ✅ |
+| Usuário não-root no container (`spring:spring`) | ✅ |
+| `.dockerignore` excluindo `.git`, `target`, `.env`, docs | ✅ |
+| `compose.yaml` com `healthcheck` (`pg_isready`) no banco | ✅ |
+| `depends_on: condition: service_healthy` (app só sobe com banco saudável) | ✅ |
+| Volume nomeado para persistir dados do banco (`postgres_data`) | ✅ |
+| `docker compose up/down/stop/start` preservando ou apagando dados conforme o comando | ✅ |
+| Extensão além da aula: serviço `frontend` com proxy reverso, publicando uma única porta | ✅ (frontend Angular não fazia parte da aula original) |
+
 ## Pré-requisitos
 
 - Java 17 (Eclipse Temurin recomendado)
