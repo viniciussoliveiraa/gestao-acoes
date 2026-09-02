@@ -19,7 +19,7 @@ Pré-requisito: aplicação rodando (`./mvnw spring-boot:run`, perfil `dev` com 
 
 - `POST /acoes` com `{"ticker":"PETR4","mercado":"BRASIL"}` → `201`, cotação real da brapi.dev.
 - `POST /acoes` com `{"ticker":"AAPL","mercado":"ESTADOS_UNIDOS"}` (requer `TWELVE_DATA_API_KEY` ou `ALPHA_VANTAGE_API_KEY` configurada) → `201`.
-- Mostrar `GET /acoes/ticker/PETR4?mercado=BRASIL`.
+- Mostrar `GET /acoes/ticker/PETR4` (ticker é globalmente único — RN07 — não precisa de `mercado` na busca).
 
 ## 4. Cadastro de ação — cenários de erro
 
@@ -36,3 +36,27 @@ Pré-requisito: aplicação rodando (`./mvnw spring-boot:run`, perfil `dev` com 
 - Mostrar `swagger-ui.html` com todos os endpoints documentados.
 - Rodar `./mvnw test` ao vivo (ou mostrar a última execução) e destacar que **nenhuma chamada de rede real** ocorre durante a suíte (todas as integrações são substituídas por `MockWebServer`).
 - Mostrar a matriz de rastreabilidade (`openspec/changes/criar-sistema-gestao-acoes/traceability.md`) ligando cada regra de negócio ao teste que a comprova.
+
+## 7. Diferenciais — autenticação, carteira e proventos (opcional, se sobrar tempo)
+
+Fora do escopo mínimo do enunciado, mas implementado como diferencial (seção 11: "autenticação com Spring Security").
+
+- `POST /auth/registrar` (nome, email, senha) → `201`.
+- `POST /auth/login` → `200` com um token JWT.
+- Chamar `GET /carteira/lancamentos` **sem** o header `Authorization` → `401` (mostrar que corretoras/ações continuam públicas, só carteira/proventos exigem token).
+- No Swagger, clicar em **Authorize** e colar `Bearer {token}`.
+- `POST /carteira/lancamentos` (compra de uma ação já cadastrada, numa corretora já cadastrada) → `201`.
+- `GET /carteira/posicoes` → mostra quantidade, preço médio e valor investido/atual consolidados.
+- `POST /proventos` (dividendo/JCP) → `201`; `GET /proventos` → lista paginada, mais recente primeiro.
+- Se o frontend Angular estiver rodando (`cd frontend && npm start` ou via Docker Compose), mostrar a mesma jornada pela interface em vez de pelo Swagger.
+
+## 8. Rodando tudo via Docker Compose (opcional, mostra a Aula 12 aplicada)
+
+```bash
+docker compose up -d --build
+docker compose ps          # postgres "healthy", aplicacao e frontend "running"
+docker compose logs -f aplicacao   # ver Liquibase executando os changeSets e a app subindo
+```
+
+- Acessar `http://localhost:8080` (frontend) e `http://localhost:8080/swagger-ui.html` (API) — tudo atrás de uma única porta publicada, via proxy reverso do Nginx do frontend.
+- `docker compose down` (preserva o volume) vs. `docker compose down --volumes` (apaga o banco) — explicar a diferença se perguntado.

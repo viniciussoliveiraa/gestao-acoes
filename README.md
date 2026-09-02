@@ -40,7 +40,7 @@ $env:SPRING_PROFILES_ACTIVE = "mysql"
 ./mvnw spring-boot:run
 ```
 
-**Nota de honestidade**: o perfil `mysql` não foi validado contra um servidor MySQL real neste ambiente de desenvolvimento (não havia um disponível). A sintaxe das migrations e o mapeamento das entidades foram validados via `MysqlMigrationSmokeTest`, que roda H2 em modo de compatibilidade MySQL (`MODE=MySQL`) — uma aproximação razoável, mas não uma garantia absoluta de compatibilidade 100% com MySQL real. Se encontrar algum erro de schema ao rodar contra MySQL de verdade, é o primeiro lugar a investigar.
+**Validação**: além do `MysqlMigrationSmokeTest` (H2 em modo de compatibilidade MySQL, `MODE=MySQL`), o perfil `mysql` foi validado em 2026-09-01 contra um MySQL 8.4 real (container `mysql:8.4`): os 8 changeSets do Liquibase (contexto `mysql`) executaram com sucesso, o Hibernate validou o schema (`ddl-auto=validate`) sem divergências, e um fluxo completo de cadastro de corretora — incluindo as chamadas reais a BrasilAPI (CNPJ + CVM) e ViaCEP — gravou e leu os dados corretamente, com o booleano `validada_cvm` (tipo `BIT` no MySQL, ajustado pelo changeSet 006) preservado.
 
 ## Variáveis de ambiente
 
