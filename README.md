@@ -30,7 +30,7 @@ Um frontend Angular consome esta API — ver [`frontend/README.md`](frontend/REA
 | RN01 | CNPJ só é aceito se válido em formato e existir na base consultada | ✅ | Dígito verificador (`CnpjUtils`) + existência via BrasilAPI |
 | RN02 | Dados principais vêm da consulta externa, não de preenchimento manual | ✅ | `razaoSocial`, `nomeFantasia`, `situacaoCadastral`, endereço sempre vêm da API |
 | RN03 | Instituição não validada na CVM: cadastro é impedido | ✅ (decisão do grupo) | `InstituicaoNaoValidadaException` → `422`; trade-off documentado em `openspec/changes/criar-sistema-gestao-acoes/design.md` |
-| RN04 | CEP validado em API pública antes de salvar | ✅ | ViaCEP; CEP inexistente → `422` |
+| RN04 | CEP validado em API pública antes de salvar | ✅ | ViaCEP; CEP inexistente → `404` (`CepNaoEncontradoException`) |
 | RN05 | Ação só é cadastrada se o ticker existir na API de cotação | ✅ | Ticker inexistente → `404` (`TickerNaoEncontradoException`) |
 | RN06 | Sistema distingue ativos BR e US, direcionando à API adequada | ✅ | Enum `Mercado` + `CotacaoStrategyResolver` (Strategy Pattern) |
 | RN07 | Não permite duas ações com o mesmo ticker | ✅ | Ticker único globalmente (índice único + verificação no service) |
@@ -58,7 +58,7 @@ Um frontend Angular consome esta API — ver [`frontend/README.md`](frontend/REA
 ### Restrições (seção 14 do enunciado)
 
 - **Mínimo de 3 integrações externas reais**: são 5 — BrasilAPI (CNPJ), BrasilAPI (CVM), ViaCEP, brapi.dev e Twelve Data/Alpha Vantage.
-- **Cenários de falha tratados**: API externa fora do ar/indisponível → `502` (`IntegracaoExternaIndisponivelException`); ticker inexistente → `404`; CNPJ inválido (formato/dígito) → `400`; CNPJ não encontrado na base → `404`; CEP inválido → `400`; CEP inexistente → `404`/`422`; todos centralizados no `GlobalExceptionHandler` (`ProblemDetail`). Validado manualmente contra os provedores reais (ver `docs/roteiro-apresentacao.md`).
+- **Cenários de falha tratados**: API externa fora do ar/indisponível → `502` (`IntegracaoExternaIndisponivelException`); ticker inexistente → `404`; CNPJ inválido (formato/dígito) → `400`; CNPJ não encontrado na base → `404`; CEP inválido (formato) → `400`; CEP inexistente → `404`; instituição não validada na CVM → `422`; todos centralizados no `GlobalExceptionHandler` (`ProblemDetail`). Validado manualmente contra os provedores reais (ver `docs/roteiro-apresentacao.md`).
 
 ### Entregáveis (seção 12 do enunciado)
 

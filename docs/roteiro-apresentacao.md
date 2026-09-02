@@ -13,7 +13,7 @@ Pré-requisito: aplicação rodando (`./mvnw spring-boot:run`, perfil `dev` com 
 
 - CNPJ com dígito verificador errado → `400`, sem nenhuma chamada externa (mostrar nos logs/Swagger que a resposta é imediata).
 - CNPJ de uma empresa que existe mas não é corretora (qualquer CNPJ comum) → `422` (RN03: instituição não validada na CVM).
-- CEP inexistente com formato válido (ex.: `99999999`) → `422`.
+- CEP inexistente com formato válido (ex.: `99999999`) → `404`.
 
 ## 3. Cadastro de ação — caminho feliz (BR e US)
 
