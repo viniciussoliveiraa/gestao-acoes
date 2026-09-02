@@ -72,6 +72,8 @@ Um frontend Angular consome esta API — ver [`frontend/README.md`](frontend/REA
 
 O projeto segue os padrões ensinados em [`AULA-10-VARIAVEIS-DE-AMBIENTE`](https://github.com/jeffersonarpasserini/suporteos2025/blob/main/docs/aulas/AULA-10-VARIAVEIS-DE-AMBIENTE.md), [`AULA-11-LIQUIBASE`](https://github.com/jeffersonarpasserini/suporteos2025/blob/main/docs/aulas/AULA-11-LIQUIBASE.md) e [`AULA-12-DOCKER-E-CONTAINERS`](https://github.com/jeffersonarpasserini/suporteos2025/blob/main/docs/aulas/AULA-12-DOCKER-E-CONTAINERS.md), adaptados ao nome das variáveis nativas do Spring Boot (`SPRING_DATASOURCE_*` em vez de `DB_*`) e a três bancos em vez de um.
 
+**Prova rápida para o professor**: cada aula tem sua tag no Git, exatamente como pedido no "Ponto de versionamento" de cada aula — `git tag -l` lista `aula-10-variaveis-ambiente`, `aula-11-liquibase` e `aula-12-docker`, cada uma no commit em que aquela aula foi aplicada. Um roteiro de demonstração ao vivo (comandos prontos para copiar/colar) está em [`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md#0-provas-de-aderência-às-aulas-de-apoio-variáveis-de-ambiente-liquibase-docker), seção 0.
+
 **Aula 10 — Variáveis de ambiente**
 
 | Prática ensinada | Aplicada? |
