@@ -147,26 +147,6 @@
         <td mat-cell *matCellDef="let l">{{ l.dataOperacao | date: 'dd/MM/yyyy' }}</td>
       </ng-container>
 
-      <ng-container matColumnDef="acoes">
-        <th mat-header-cell *matHeaderCellDef></th>
-        <td mat-cell *matCellDef="let l">
-          <button
-            mat-icon-button
-            type="button"
-            aria-label="Excluir lançamento"
-            title="Excluir lançamento"
-            [disabled]="excluindoId() === l.id"
-            (click)="excluir(l)"
-          >
-            @if (excluindoId() === l.id) {
-              <mat-progress-spinner diameter="18" mode="indeterminate" />
-            } @else {
-              <mat-icon>delete</mat-icon>
-            }
-          </button>
-        </td>
-      </ng-container>
-
       <tr mat-header-row *matHeaderRowDef="colunas"></tr>
       <tr mat-row *matRowDef="let row; columns: colunas"></tr>
     </table>

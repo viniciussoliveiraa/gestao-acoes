@@ -64,8 +64,7 @@ export class Lancamentos implements OnInit {
   protected readonly pageIndex = signal(0);
   protected readonly pageSize = signal(10);
 
-  protected readonly colunas = ['tipo', 'tickerAcao', 'razaoSocialCorretora', 'quantidade', 'precoUnitario', 'dataOperacao', 'acoes'];
-  protected readonly excluindoId = signal<number | null>(null);
+  protected readonly colunas = ['tipo', 'tickerAcao', 'razaoSocialCorretora', 'quantidade', 'precoUnitario', 'dataOperacao'];
 
   private readonly fb = inject(FormBuilder);
 
@@ -131,32 +130,6 @@ export class Lancamentos implements OnInit {
           this.erro.set(mensagemDeErro(erro));
         },
       });
-  }
-
-  protected excluir(lancamento: LancamentoResponse): void {
-    const confirmou = confirm(
-      `Excluir o lançamento de ${lancamento.tipo === 'VENDA' ? 'venda' : 'compra'} de ${lancamento.quantidade} ${lancamento.tickerAcao}? Essa ação não pode ser desfeita.`
-    );
-    if (!confirmou) {
-      return;
-    }
-
-    this.excluindoId.set(lancamento.id);
-    this.erro.set(null);
-    this.sucesso.set(null);
-
-    this.carteiraService.excluirLancamento(lancamento.id).subscribe({
-      next: () => {
-        this.excluindoId.set(null);
-        this.sucesso.set('Lançamento excluído com sucesso.');
-        this.carregarLancamentos();
-        this.carregarTotais();
-      },
-      error: (erro) => {
-        this.excluindoId.set(null);
-        this.erro.set(mensagemDeErro(erro));
-      },
-    });
   }
 
   private carregarLancamentos(): void {

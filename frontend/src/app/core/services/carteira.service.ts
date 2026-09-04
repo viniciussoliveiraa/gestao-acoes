@@ -23,8 +23,4 @@ export class CarteiraService {
   listarPosicoes(): Observable<PosicaoResponse[]> {
     return this.http.get<PosicaoResponse[]>(`${this.baseUrl}/posicoes`);
   }
-
-  excluirLancamento(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/lancamentos/${id}`);
-  }
 }

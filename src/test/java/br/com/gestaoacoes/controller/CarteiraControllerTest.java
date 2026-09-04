@@ -32,11 +32,8 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -146,27 +143,6 @@ class CarteiraControllerTest {
 
         mockMvc.perform(get("/carteira/lancamentos").with(authentication(autenticacaoDoUsuario(42L))))
                 .andExpect(status().isOk());
-    }
-
-    @Test
-    void excluirLancamentoSemTokenRetorna401() throws Exception {
-        mockMvc.perform(delete("/carteira/lancamentos/5")).andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void excluirLancamentoAutenticadoComSucessoRetorna204() throws Exception {
-        mockMvc.perform(delete("/carteira/lancamentos/5").with(authentication(autenticacaoDoUsuario(42L))))
-                .andExpect(status().isNoContent());
-
-        verify(service).excluirLancamento(42L, 5L);
-    }
-
-    @Test
-    void excluirLancamentoInexistenteRetorna404() throws Exception {
-        doThrow(new RecursoNaoEncontradoException("não encontrado")).when(service).excluirLancamento(42L, 5L);
-
-        mockMvc.perform(delete("/carteira/lancamentos/5").with(authentication(autenticacaoDoUsuario(42L))))
-                .andExpect(status().isNotFound());
     }
 
     private Lancamento mockLancamento() {
