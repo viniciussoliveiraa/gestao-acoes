@@ -139,6 +139,40 @@ class CarteiraServiceTest {
     }
 
     @Test
+    void excluirLancamentoDoProprioUsuarioRemove() {
+        CarteiraService service = service();
+        Lancamento lancamento = lancamento(42L, acao("PETR4", new BigDecimal("35.0000")), corretora(),
+                TipoLancamento.COMPRA, "100", "32.50");
+        when(lancamentoRepository.findById(5L)).thenReturn(Optional.of(lancamento));
+
+        service.excluirLancamento(42L, 5L);
+
+        verify(lancamentoRepository).delete(lancamento);
+    }
+
+    @Test
+    void excluirLancamentoInexistenteLancaExcecao() {
+        CarteiraService service = service();
+        when(lancamentoRepository.findById(5L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.excluirLancamento(42L, 5L))
+                .isInstanceOf(RecursoNaoEncontradoException.class);
+        verify(lancamentoRepository, never()).delete(any());
+    }
+
+    @Test
+    void excluirLancamentoDeOutroUsuarioLancaExcecaoENaoRemove() {
+        CarteiraService service = service();
+        Lancamento lancamento = lancamento(99L, acao("PETR4", new BigDecimal("35.0000")), corretora(),
+                TipoLancamento.COMPRA, "100", "32.50");
+        when(lancamentoRepository.findById(5L)).thenReturn(Optional.of(lancamento));
+
+        assertThatThrownBy(() -> service.excluirLancamento(42L, 5L))
+                .isInstanceOf(RecursoNaoEncontradoException.class);
+        verify(lancamentoRepository, never()).delete(any());
+    }
+
+    @Test
     void listarPosicoesComUmaUnicaCompraCalculaPrecoMedioValorAtualEVariacao() {
         CarteiraService service = service();
         Acao acao = acao("PETR4", new BigDecimal("40.0000"));

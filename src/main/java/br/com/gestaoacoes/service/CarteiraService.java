@@ -70,6 +70,15 @@ public class CarteiraService {
         return lancamentoRepository.findByUsuarioId(usuarioId, pageable);
     }
 
+    public void excluirLancamento(Long usuarioId, Long lancamentoId) {
+        Lancamento lancamento = lancamentoRepository.findById(lancamentoId)
+                .filter(l -> l.getUsuarioId().equals(usuarioId))
+                // Mesma mensagem para "não existe" e "não é seu": evita confirmar pra quem tenta
+                // excluir lançamento de outro usuário que o id é válido.
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Lançamento não encontrado: id " + lancamentoId));
+        lancamentoRepository.delete(lancamento);
+    }
+
     public List<PosicaoResponse> listarPosicoes(Long usuarioId) {
         List<Lancamento> lancamentos = lancamentoRepository.listarPorUsuarioOrdenadoPorAtivoEData(usuarioId);
 
