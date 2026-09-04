@@ -10,6 +10,7 @@ public record PosicaoResponse(
         BigDecimal precoMedio,
         BigDecimal valorInvestido,
         BigDecimal valorAtual,
-        BigDecimal variacaoPercentual
+        BigDecimal variacaoPercentual,
+        BigDecimal resultadoRealizado
 ) {
 }

@@ -19,11 +19,16 @@ public interface LancamentoRepository extends JpaRepository<Lancamento, Long> {
             countQuery = "SELECT COUNT(l) FROM Lancamento l WHERE l.usuarioId = :usuarioId")
     Page<Lancamento> findByUsuarioId(@Param("usuarioId") Long usuarioId, Pageable pageable);
 
-    @Query("""
-            SELECT new br.com.gestaoacoes.repository.PosicaoAgregada(l.acao, SUM(l.quantidade), SUM(l.quantidade * l.precoUnitario))
-            FROM Lancamento l
-            WHERE l.usuarioId = :usuarioId
-            GROUP BY l.acao
-            """)
-    List<PosicaoAgregada> agregarPosicoesPorUsuario(@Param("usuarioId") Long usuarioId);
+    // Usada por CarteiraService para calcular a posição de cada ativo por custo médio ponderado:
+    // o cálculo é order-dependent (venda não altera o preço médio, só compra), então os
+    // lançamentos precisam chegar já ordenados cronologicamente por ativo — ver design.md da
+    // mudança "adicionar-venda-carteira".
+    @Query("SELECT l FROM Lancamento l JOIN FETCH l.acao JOIN FETCH l.corretora " +
+            "WHERE l.usuarioId = :usuarioId " +
+            "ORDER BY l.acao.id ASC, l.dataOperacao ASC, l.criadoEm ASC")
+    List<Lancamento> listarPorUsuarioOrdenadoPorAtivoEData(@Param("usuarioId") Long usuarioId);
+
+    // Usada para validar saldo disponível antes de registrar uma venda — não precisa de ordem,
+    // a soma líquida (compra - venda) independe da ordem de processamento.
+    List<Lancamento> findByUsuarioIdAndAcaoId(Long usuarioId, Long acaoId);
 }

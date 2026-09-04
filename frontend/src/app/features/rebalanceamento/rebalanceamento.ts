@@ -21,6 +21,7 @@ interface LinhaRebalanceamento {
   valorAlvo: number;
   diferenca: number;
   sugestaoAporte: number;
+  resultadoRealizado: number;
 }
 
 const CHAVE_METAS_LOCALSTORAGE = 'gestao-acoes:metas-alocacao';
@@ -49,9 +50,22 @@ export class Rebalanceamento implements OnInit {
   protected readonly metas = signal<Record<string, number>>({});
   protected readonly aporte = signal<number>(0);
 
-  protected readonly colunas = ['ticker', 'percentualAtual', 'valorAtual', 'meta', 'valorAlvo', 'diferenca', 'sugestaoAporte'];
+  protected readonly colunas = [
+    'ticker',
+    'percentualAtual',
+    'valorAtual',
+    'meta',
+    'valorAlvo',
+    'diferenca',
+    'sugestaoAporte',
+    'resultadoRealizado',
+  ];
 
   protected readonly totalAtual = computed(() => this.posicoes().reduce((soma, p) => soma + p.valorAtual, 0));
+
+  protected readonly totalResultadoRealizado = computed(() =>
+    this.posicoes().reduce((soma, p) => soma + p.resultadoRealizado, 0)
+  );
 
   protected readonly somaMetas = computed(() => {
     const metasAtuais = this.metas();
@@ -78,6 +92,7 @@ export class Rebalanceamento implements OnInit {
         valorAlvo,
         diferenca: valorAlvo - p.valorAtual,
         sugestaoAporte: 0,
+        resultadoRealizado: p.resultadoRealizado,
       };
     });
 

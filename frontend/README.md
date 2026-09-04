@@ -21,7 +21,7 @@ npm start   # equivalente a `ng serve`, sobe em http://localhost:4200
 1. Abra `http://localhost:4200` → redireciona para `/login`.
 2. Cadastre-se em "Cadastre-se" ou faça login (token JWT armazenado no navegador).
 3. **Corretoras** e **Ações** podem ser cadastradas sem login (endpoints públicos no backend, só cadastro + listagem — sem edição/exclusão) — cadastre ao menos uma de cada para poder registrar lançamentos.
-4. **Lançamentos**: registre uma compra (ação + corretora + quantidade + preço + data).
+4. **Lançamentos**: registre uma compra ou venda (tipo + ação + corretora + quantidade + preço + data). Venda é validada contra o saldo disponível do ativo.
 5. **Resumo**: mostra a posição consolidada calculada a partir dos lançamentos.
 6. **Proventos**: registre dividendos/JCP recebidos.
 7. **Gráficos**: alocação por ativo e evolução do valor investido.
@@ -41,7 +41,7 @@ src/app/
     auth/          login, registro
     shell/         layout com sidebar/toolbar (envolve as telas autenticadas e públicas)
     resumo/        dashboard de posições
-    lancamentos/   formulário + histórico de compras
+    lancamentos/   formulário + histórico de compras e vendas
     proventos/     formulário + histórico de proventos
     graficos/      alocação (donut) e evolução (linha), via ng2-charts/Chart.js
     rebalanceamento/ metas de alocação por ativo (localStorage) e sugestão de aporte
@@ -67,6 +67,5 @@ Roda a suíte padrão do Angular CLI (Vitest). Cobertura mínima — o esforço 
 
 ## Limitações conhecidas
 
-- Sem venda/baixa de posição (carteira só registra compras/aportes).
 - Sem refresh token — o JWT expira (`APP_JWT_EXPIRATION_MINUTES` no backend) e força novo login.
 - Sem autorização por papéis — todo usuário autenticado só enxerga os próprios lançamentos/proventos.

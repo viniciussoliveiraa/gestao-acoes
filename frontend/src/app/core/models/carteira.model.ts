@@ -1,6 +1,9 @@
+export type TipoLancamento = 'COMPRA' | 'VENDA';
+
 export interface LancamentoRequest {
   acaoId: number;
   corretoraId: number;
+  tipo: TipoLancamento;
   quantidade: number;
   precoUnitario: number;
   dataOperacao: string;
@@ -12,6 +15,7 @@ export interface LancamentoResponse {
   tickerAcao: string;
   corretoraId: number;
   razaoSocialCorretora: string;
+  tipo: TipoLancamento;
   quantidade: number;
   precoUnitario: number;
   dataOperacao: string;
@@ -27,4 +31,5 @@ export interface PosicaoResponse {
   valorInvestido: number;
   valorAtual: number;
   variacaoPercentual: number;
+  resultadoRealizado: number;
 }

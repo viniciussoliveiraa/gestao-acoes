@@ -58,6 +58,16 @@
         </span>
       }
 
+      @if (totalResultadoRealizado() !== 0) {
+        <span
+          class="trend"
+          [class.trend--positive]="totalResultadoRealizado() > 0"
+          [class.trend--negative]="totalResultadoRealizado() < 0"
+        >
+          Resultado realizado em vendas: {{ totalResultadoRealizado() | currency: 'BRL' }}
+        </span>
+      }
+
       <span class="rebalanceamento__aviso-local">
         <mat-icon>info</mat-icon>
         Metas salvas apenas neste navegador
@@ -125,6 +135,19 @@
         <td mat-cell *matCellDef="let l">
           @if (aporte() > 0) {
             {{ l.sugestaoAporte | currency: 'BRL' }}
+          } @else {
+            —
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="resultadoRealizado">
+        <th mat-header-cell *matHeaderCellDef>Resultado realizado</th>
+        <td mat-cell *matCellDef="let l">
+          @if (l.resultadoRealizado !== 0) {
+            <span class="trend" [class.trend--positive]="l.resultadoRealizado > 0" [class.trend--negative]="l.resultadoRealizado < 0">
+              {{ l.resultadoRealizado | currency: 'BRL' }}
+            </span>
           } @else {
             —
           }

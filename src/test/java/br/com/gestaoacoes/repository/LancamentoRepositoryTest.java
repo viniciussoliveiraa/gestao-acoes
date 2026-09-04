@@ -5,6 +5,7 @@ import br.com.gestaoacoes.model.Corretora;
 import br.com.gestaoacoes.model.Lancamento;
 import br.com.gestaoacoes.model.Mercado;
 import br.com.gestaoacoes.model.Moeda;
+import br.com.gestaoacoes.model.TipoLancamento;
 import br.com.gestaoacoes.model.Usuario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,8 +51,8 @@ class LancamentoRepositoryTest {
 
     @Test
     void listaLancamentosPorUsuarioPaginado() {
-        repository.save(novoLancamento(usuario1Id, petr4, new BigDecimal("100"), new BigDecimal("30.0000")));
-        repository.save(novoLancamento(usuario2Id, petr4, new BigDecimal("50"), new BigDecimal("31.0000")));
+        repository.save(novoLancamento(usuario1Id, petr4, TipoLancamento.COMPRA, new BigDecimal("100"), new BigDecimal("30.0000")));
+        repository.save(novoLancamento(usuario2Id, petr4, TipoLancamento.COMPRA, new BigDecimal("50"), new BigDecimal("31.0000")));
 
         var pagina = repository.findByUsuarioId(usuario1Id, PageRequest.of(0, 10));
 
@@ -59,52 +60,43 @@ class LancamentoRepositoryTest {
     }
 
     @Test
-    void agregaPosicaoDeUmUnicoLancamento() {
-        repository.save(novoLancamento(usuario1Id, petr4, new BigDecimal("100"), new BigDecimal("32.5000")));
+    void listaLancamentosOrdenadosPorAtivoEDataParaCalculoDePosicao() {
+        repository.save(novoLancamento(usuario1Id, petr4, TipoLancamento.COMPRA, new BigDecimal("50"), new BigDecimal("36.0000"),
+                LocalDate.of(2026, 8, 20)));
+        repository.save(novoLancamento(usuario1Id, petr4, TipoLancamento.COMPRA, new BigDecimal("100"), new BigDecimal("30.0000"),
+                LocalDate.of(2026, 8, 10)));
+        repository.save(novoLancamento(usuario1Id, vale3, TipoLancamento.COMPRA, new BigDecimal("10"), new BigDecimal("60.0000"),
+                LocalDate.of(2026, 8, 15)));
 
-        List<PosicaoAgregada> posicoes = repository.agregarPosicoesPorUsuario(usuario1Id);
+        List<Lancamento> lancamentos = repository.listarPorUsuarioOrdenadoPorAtivoEData(usuario1Id);
 
-        assertThat(posicoes).hasSize(1);
-        PosicaoAgregada posicao = posicoes.get(0);
-        assertThat(posicao.acao().getTicker()).isEqualTo("PETR4");
-        assertThat(posicao.quantidadeTotal()).isEqualByComparingTo("100");
-        assertThat(posicao.valorInvestidoTotal()).isEqualByComparingTo("3250.0000");
+        assertThat(lancamentos).hasSize(3);
+        assertThat(lancamentos.get(0).getAcao().getTicker()).isEqualTo("PETR4");
+        assertThat(lancamentos.get(0).getDataOperacao()).isEqualTo(LocalDate.of(2026, 8, 10));
+        assertThat(lancamentos.get(1).getAcao().getTicker()).isEqualTo("PETR4");
+        assertThat(lancamentos.get(1).getDataOperacao()).isEqualTo(LocalDate.of(2026, 8, 20));
+        assertThat(lancamentos.get(2).getAcao().getTicker()).isEqualTo("VALE3");
     }
 
     @Test
-    void agregaPosicaoConsolidandoMultiplosLancamentosDoMesmoAtivo() {
-        repository.save(novoLancamento(usuario1Id, petr4, new BigDecimal("100"), new BigDecimal("30.0000")));
-        repository.save(novoLancamento(usuario1Id, petr4, new BigDecimal("50"), new BigDecimal("36.0000")));
+    void listaLancamentosPorUsuarioEAtivoIgnorandoOutrosAtivosEUsuarios() {
+        repository.save(novoLancamento(usuario1Id, petr4, TipoLancamento.COMPRA, new BigDecimal("100"), new BigDecimal("30.0000")));
+        repository.save(novoLancamento(usuario1Id, vale3, TipoLancamento.COMPRA, new BigDecimal("10"), new BigDecimal("60.0000")));
+        repository.save(novoLancamento(usuario2Id, petr4, TipoLancamento.COMPRA, new BigDecimal("50"), new BigDecimal("31.0000")));
 
-        List<PosicaoAgregada> posicoes = repository.agregarPosicoesPorUsuario(usuario1Id);
+        List<Lancamento> lancamentos = repository.findByUsuarioIdAndAcaoId(usuario1Id, petr4.getId());
 
-        assertThat(posicoes).hasSize(1);
-        PosicaoAgregada posicao = posicoes.get(0);
-        assertThat(posicao.quantidadeTotal()).isEqualByComparingTo("150");
-        assertThat(posicao.valorInvestidoTotal()).isEqualByComparingTo("4800.0000");
+        assertThat(lancamentos).hasSize(1);
+        assertThat(lancamentos.get(0).getQuantidade()).isEqualByComparingTo("100");
     }
 
-    @Test
-    void agregaPosicoesSeparadasPorAtivoDiferente() {
-        repository.save(novoLancamento(usuario1Id, petr4, new BigDecimal("100"), new BigDecimal("30.0000")));
-        repository.save(novoLancamento(usuario1Id, vale3, new BigDecimal("10"), new BigDecimal("60.0000")));
-
-        List<PosicaoAgregada> posicoes = repository.agregarPosicoesPorUsuario(usuario1Id);
-
-        assertThat(posicoes).hasSize(2);
+    private Lancamento novoLancamento(Long usuarioId, Acao acao, TipoLancamento tipo, BigDecimal quantidade, BigDecimal preco) {
+        return novoLancamento(usuarioId, acao, tipo, quantidade, preco, LocalDate.now());
     }
 
-    @Test
-    void naoRetornaPosicoesDeOutroUsuario() {
-        repository.save(novoLancamento(usuario1Id, petr4, new BigDecimal("100"), new BigDecimal("30.0000")));
-
-        List<PosicaoAgregada> posicoesUsuario2 = repository.agregarPosicoesPorUsuario(usuario2Id);
-
-        assertThat(posicoesUsuario2).isEmpty();
-    }
-
-    private Lancamento novoLancamento(Long usuarioId, Acao acao, BigDecimal quantidade, BigDecimal preco) {
-        return new Lancamento(usuarioId, acao, corretora, quantidade, preco, LocalDate.now(), OffsetDateTime.now());
+    private Lancamento novoLancamento(Long usuarioId, Acao acao, TipoLancamento tipo, BigDecimal quantidade,
+                                       BigDecimal preco, LocalDate dataOperacao) {
+        return new Lancamento(usuarioId, acao, corretora, tipo, quantidade, preco, dataOperacao, OffsetDateTime.now());
     }
 
     private Usuario novoUsuario(String email) {

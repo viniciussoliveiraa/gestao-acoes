@@ -266,9 +266,9 @@ A suíte completa (121 testes na versão atual: unitários, `@DataJpaTest`, `@We
 | `PUT` | `/acoes/{id}/atualizar-cotacao` | Não | Atualiza a cotação de uma ação já cadastrada |
 | `POST` | `/auth/registrar` | Não | Cadastra usuário (nome, email, senha) |
 | `POST` | `/auth/login` | Não | Autentica e retorna um token JWT |
-| `POST` | `/carteira/lancamentos` | **Sim** (Bearer JWT) | Registra uma compra/aporte (ação, corretora, quantidade, preço, data) |
+| `POST` | `/carteira/lancamentos` | **Sim** (Bearer JWT) | Registra uma compra ou venda (tipo, ação, corretora, quantidade, preço, data); venda acima do saldo disponível retorna `422` |
 | `GET` | `/carteira/lancamentos` | **Sim** | Lista os lançamentos do usuário autenticado (paginado) |
-| `GET` | `/carteira/posicoes` | **Sim** | Posições consolidadas por ativo (quantidade, preço médio, valor investido/atual, variação) |
+| `GET` | `/carteira/posicoes` | **Sim** | Posições consolidadas por ativo, por custo médio ponderado (quantidade líquida, preço médio, valor investido/atual, variação, resultado realizado em vendas) |
 | `POST` | `/proventos` | **Sim** | Registra um provento (dividendo/JCP) recebido |
 | `GET` | `/proventos` | **Sim** | Lista os proventos do usuário autenticado (paginado, mais recente primeiro) |
 
@@ -290,7 +290,7 @@ Este projeto usa exclusivamente planos gratuitos/públicos desses provedores; ne
 
 ## Limitações conhecidas do MVP
 
-Fora de escopo (ver `proposal.md`/`design.md` de `openspec/changes/adicionar-carteira-auth-frontend-angular/`, seção "Non-Goals"): venda/baixa de posição (carteira só registra compras/aportes), refresh token/OAuth2/login social, autorização por papéis (roles/admin), histórico de cotações, cache avançado, circuit breaker, fallback automático entre provedores US, métricas/tracing, filtros de busca além de paginação simples.
+Fora de escopo (ver `proposal.md`/`design.md` de `openspec/changes/adicionar-carteira-auth-frontend-angular/` e `openspec/changes/adicionar-venda-carteira/`, seção "Non-Goals"): edição/exclusão de lançamentos já registrados, apuração de IR (DARF, isenção mensal, day-trade), refresh token/OAuth2/login social, autorização por papéis (roles/admin), histórico de cotações, cache avançado, circuit breaker, fallback automático entre provedores US, métricas/tracing, filtros de busca além de paginação simples.
 
 ## Estrutura do projeto
 

@@ -17,7 +17,7 @@ import { CorretoraService } from '../../core/services/corretora.service';
 import { mensagemDeErro } from '../../core/services/erro.util';
 import { AcaoResponse } from '../../core/models/acao.model';
 import { CorretoraResponse } from '../../core/models/corretora.model';
-import { LancamentoResponse } from '../../core/models/carteira.model';
+import { LancamentoResponse, TipoLancamento } from '../../core/models/carteira.model';
 
 @Component({
   selector: 'app-lancamentos',
@@ -64,13 +64,14 @@ export class Lancamentos implements OnInit {
   protected readonly pageIndex = signal(0);
   protected readonly pageSize = signal(10);
 
-  protected readonly colunas = ['tickerAcao', 'razaoSocialCorretora', 'quantidade', 'precoUnitario', 'dataOperacao'];
+  protected readonly colunas = ['tipo', 'tickerAcao', 'razaoSocialCorretora', 'quantidade', 'precoUnitario', 'dataOperacao'];
 
   private readonly fb = inject(FormBuilder);
 
   protected readonly form = this.fb.nonNullable.group({
     acaoId: [null as number | null, Validators.required],
     corretoraId: [null as number | null, Validators.required],
+    tipo: ['COMPRA' as TipoLancamento, Validators.required],
     quantidade: [null as number | null, [Validators.required, Validators.min(0.00000001)]],
     precoUnitario: [null as number | null, [Validators.required, Validators.min(0.01)]],
     dataOperacao: [null as Date | null, Validators.required],
@@ -110,6 +111,7 @@ export class Lancamentos implements OnInit {
       .registrarLancamento({
         acaoId: valores.acaoId!,
         corretoraId: valores.corretoraId!,
+        tipo: valores.tipo,
         quantidade: valores.quantidade!,
         precoUnitario: valores.precoUnitario!,
         dataOperacao: this.formatarData(valores.dataOperacao!),

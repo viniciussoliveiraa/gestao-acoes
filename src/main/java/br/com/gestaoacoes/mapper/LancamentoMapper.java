@@ -14,6 +14,7 @@ public class LancamentoMapper {
                 lancamento.getAcao().getTicker(),
                 lancamento.getCorretora().getId(),
                 lancamento.getCorretora().getRazaoSocial(),
+                lancamento.getTipo(),
                 lancamento.getQuantidade(),
                 lancamento.getPrecoUnitario(),
                 lancamento.getDataOperacao(),

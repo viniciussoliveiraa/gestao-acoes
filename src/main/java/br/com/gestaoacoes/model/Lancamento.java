@@ -58,12 +58,12 @@ public class Lancamento {
         // uso exclusivo do JPA
     }
 
-    public Lancamento(Long usuarioId, Acao acao, Corretora corretora, BigDecimal quantidade,
+    public Lancamento(Long usuarioId, Acao acao, Corretora corretora, TipoLancamento tipo, BigDecimal quantidade,
                        BigDecimal precoUnitario, LocalDate dataOperacao, OffsetDateTime criadoEm) {
         this.usuarioId = usuarioId;
         this.acao = acao;
         this.corretora = corretora;
-        this.tipo = TipoLancamento.COMPRA;
+        this.tipo = tipo;
         this.quantidade = quantidade;
         this.precoUnitario = precoUnitario;
         this.dataOperacao = dataOperacao;

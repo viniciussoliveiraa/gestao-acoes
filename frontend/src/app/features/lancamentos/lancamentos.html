@@ -1,7 +1,7 @@
 <div class="page-header">
   <div>
     <h1 class="page-header__title"><mat-icon>receipt_long</mat-icon> Lançamentos</h1>
-    <p class="page-header__subtitle">Registre compras de ações para alimentar sua carteira</p>
+    <p class="page-header__subtitle">Registre compras e vendas de ações para alimentar sua carteira</p>
   </div>
 </div>
 
@@ -9,6 +9,14 @@
   <h2 class="form-card__header"><mat-icon>add_circle</mat-icon> Novo lançamento</h2>
 
   <form [formGroup]="form" (ngSubmit)="submeter()" class="lancamentos__form">
+    <mat-form-field appearance="outline">
+      <mat-label>Tipo</mat-label>
+      <mat-select formControlName="tipo">
+        <mat-option value="COMPRA">Compra</mat-option>
+        <mat-option value="VENDA">Venda</mat-option>
+      </mat-select>
+    </mat-form-field>
+
     <mat-form-field appearance="outline">
       <mat-label>Ação</mat-label>
       <mat-select formControlName="acaoId">
@@ -105,6 +113,15 @@
 } @else {
   <div class="data-table-wrapper">
     <table mat-table [dataSource]="lancamentos()">
+      <ng-container matColumnDef="tipo">
+        <th mat-header-cell *matHeaderCellDef>Tipo</th>
+        <td mat-cell *matCellDef="let l">
+          <span class="trend" [class.trend--positive]="l.tipo === 'COMPRA'" [class.trend--negative]="l.tipo === 'VENDA'">
+            {{ l.tipo === 'VENDA' ? 'Venda' : 'Compra' }}
+          </span>
+        </td>
+      </ng-container>
+
       <ng-container matColumnDef="tickerAcao">
         <th mat-header-cell *matHeaderCellDef>Ativo</th>
         <td mat-cell *matCellDef="let l">{{ l.tickerAcao }}</td>

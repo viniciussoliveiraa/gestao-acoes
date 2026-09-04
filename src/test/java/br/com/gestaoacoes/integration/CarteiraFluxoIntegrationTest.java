@@ -21,6 +21,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -100,19 +103,47 @@ class CarteiraFluxoIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(corpoLancamento))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.tickerAcao").value(TICKER));
+                .andExpect(jsonPath("$.tickerAcao").value(TICKER))
+                .andExpect(jsonPath("$.tipo").value("COMPRA"));
+
+        // Venda acima do saldo disponível (100) deve ser rejeitada e não persistida.
+        String corpoVendaAcimaDoSaldo = """
+                {"acaoId": %d, "corretoraId": %d, "tipo": "VENDA", "quantidade": 150, "precoUnitario": 35.00, "dataOperacao": "2026-08-20"}
+                """.formatted(acao.getId(), corretora.getId());
+        mockMvc.perform(post("/carteira/lancamentos")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoVendaAcimaDoSaldo))
+                .andExpect(status().isUnprocessableEntity());
+
+        // Venda parcial dentro do saldo.
+        String corpoVenda = """
+                {"acaoId": %d, "corretoraId": %d, "tipo": "VENDA", "quantidade": 40, "precoUnitario": 35.00, "dataOperacao": "2026-08-20"}
+                """.formatted(acao.getId(), corretora.getId());
+        mockMvc.perform(post("/carteira/lancamentos")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoVenda))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tipo").value("VENDA"));
 
         // Reproduz o bug: numa requisição HTTP real (sem @Transactional no teste), o
         // LancamentoMapper roda fora da transação do repositório e precisa encontrar acao/
         // corretora já carregados via JOIN FETCH.
         mockMvc.perform(get("/carteira/lancamentos").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].tickerAcao").value(TICKER))
-                .andExpect(jsonPath("$.content[0].razaoSocialCorretora").value("Razao LTDA"));
+                .andExpect(jsonPath("$.content[*].tickerAcao").value(everyItem(is(TICKER))))
+                .andExpect(jsonPath("$.content[*].razaoSocialCorretora").value(everyItem(is("Razao LTDA"))));
 
-        mockMvc.perform(get("/carteira/posicoes").header("Authorization", "Bearer " + token))
+        // Preço médio (compra) mantido em 32,50 mesmo após a venda; quantidade líquida 60.
+        String respostaPosicoes = mockMvc.perform(get("/carteira/posicoes").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].ticker").value(TICKER));
+                .andExpect(jsonPath("$[0].ticker").value(TICKER))
+                .andReturn().getResponse().getContentAsString();
+        var posicao = objectMapper.readTree(respostaPosicoes).get(0);
+        assertThat(new BigDecimal(posicao.get("quantidade").asText())).isEqualByComparingTo("60");
+        assertThat(new BigDecimal(posicao.get("precoMedio").asText())).isEqualByComparingTo("32.5000");
+        assertThat(new BigDecimal(posicao.get("resultadoRealizado").asText())).isEqualByComparingTo("100.0000");
 
         String corpoProvento = """
                 {"acaoId": %d, "tipo": "DIVIDENDO", "valorTotal": 45.90, "dataPagamento": "2026-07-15"}
