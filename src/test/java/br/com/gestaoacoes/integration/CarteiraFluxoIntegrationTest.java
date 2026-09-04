@@ -24,6 +24,7 @@ import java.time.OffsetDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -98,13 +99,15 @@ class CarteiraFluxoIntegrationTest {
         String corpoLancamento = """
                 {"acaoId": %d, "corretoraId": %d, "quantidade": 100, "precoUnitario": 32.50, "dataOperacao": "2026-08-10"}
                 """.formatted(acao.getId(), corretora.getId());
-        mockMvc.perform(post("/carteira/lancamentos")
+        String respostaCompra = mockMvc.perform(post("/carteira/lancamentos")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(corpoLancamento))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.tickerAcao").value(TICKER))
-                .andExpect(jsonPath("$.tipo").value("COMPRA"));
+                .andExpect(jsonPath("$.tipo").value("COMPRA"))
+                .andReturn().getResponse().getContentAsString();
+        long idCompra = objectMapper.readTree(respostaCompra).get("id").asLong();
 
         // Venda acima do saldo disponível (100) deve ser rejeitada e não persistida.
         String corpoVendaAcimaDoSaldo = """
@@ -144,6 +147,16 @@ class CarteiraFluxoIntegrationTest {
         assertThat(new BigDecimal(posicao.get("quantidade").asText())).isEqualByComparingTo("60");
         assertThat(new BigDecimal(posicao.get("precoMedio").asText())).isEqualByComparingTo("32.5000");
         assertThat(new BigDecimal(posicao.get("resultadoRealizado").asText())).isEqualByComparingTo("100.0000");
+
+        // Exclui a compra original e confirma que ela some do histórico e que tentar excluir de
+        // novo (id já removido) responde 404 em vez de 204.
+        mockMvc.perform(delete("/carteira/lancamentos/" + idCompra).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/carteira/lancamentos/" + idCompra).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/carteira/lancamentos").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + idCompra + ")]").isEmpty());
 
         String corpoProvento = """
                 {"acaoId": %d, "tipo": "DIVIDENDO", "valorTotal": 45.90, "dataPagamento": "2026-07-15"}
