@@ -48,6 +48,14 @@ services:
       ALPHA_VANTAGE_API_KEY: ${ALPHA_VANTAGE_API_KEY:-}
     # Sem porta publicada no host: o servico so e acessado via rede interna do
     # Compose (hostname "aplicacao"), atras do proxy reverso do frontend.
+    healthcheck:
+      # Sem isso o frontend sobe (e aceita requisicoes) antes do Spring Boot terminar de
+      # inicializar, e o proxy reverso do nginx devolve 502 nos primeiros segundos.
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
 
   frontend:
     build:
@@ -56,7 +64,8 @@ services:
     image: gestao-acoes-frontend:local
     restart: unless-stopped
     depends_on:
-      - aplicacao
+      aplicacao:
+        condition: service_healthy
     ports:
       # Unica porta publicada: serve o Angular e faz proxy da API, tudo junto.
       - "${APP_PORT:-8080}:80"
