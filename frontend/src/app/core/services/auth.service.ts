@@ -11,9 +11,12 @@ export class AuthService {
   private readonly tokenSignal = signal<string | null>(
     localStorage.getItem(CHAVE_TOKEN) ?? sessionStorage.getItem(CHAVE_TOKEN)
   );
-  readonly autenticado = computed(() => this.tokenSignal() !== null);
+  /** Falso tanto para ausência de token quanto para um JWT com o claim `exp` vencido. */
+  readonly autenticado = computed(() => this.tokenValido(this.tokenSignal()));
   /** Extraído do claim `email` do JWT (não requer chamada extra à API). */
-  readonly emailUsuario = computed(() => this.decodificarEmail(this.tokenSignal()));
+  readonly emailUsuario = computed(
+    () => (this.decodificarPayload(this.tokenSignal())?.['email'] as string | undefined) ?? null
+  );
 
   constructor(private readonly http: HttpClient) {}
 
@@ -44,14 +47,21 @@ export class AuthService {
     this.tokenSignal.set(token);
   }
 
-  private decodificarEmail(token: string | null): string | null {
+  /** @returns true se houver um token com claim `exp` ainda no futuro. */
+  private tokenValido(token: string | null): boolean {
+    const exp = this.decodificarPayload(token)?.['exp'] as number | undefined;
+    // `exp` do JWT é em segundos desde a época; Date.now() é em milissegundos.
+    return exp !== undefined && exp * 1000 > Date.now();
+  }
+
+  private decodificarPayload(token: string | null): Record<string, unknown> | null {
     if (!token) {
       return null;
     }
     try {
       const payload = token.split('.')[1];
       const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-      return (JSON.parse(json).email as string | undefined) ?? null;
+      return JSON.parse(json) as Record<string, unknown>;
     } catch {
       return null;
     }

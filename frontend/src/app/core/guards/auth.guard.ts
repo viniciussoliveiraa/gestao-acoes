@@ -10,6 +10,11 @@ export const authGuard: CanActivateFn = () => {
     return true;
   }
 
+  // Limpa um token presente porém expirado, para não repetir o mesmo veredito a cada navegação.
+  if (authService.token()) {
+    authService.logout();
+  }
+
   router.navigate(['/login']);
   return false;
 };
