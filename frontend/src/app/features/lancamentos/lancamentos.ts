@@ -89,6 +89,13 @@ export class Lancamentos implements OnInit {
     this.corretoraService.listar(0, 100).subscribe((pagina) => this.corretoras.set(pagina.content));
     this.carregarLancamentos();
     this.carregarTotais();
+
+    this.form.controls.acaoId.valueChanges.subscribe((acaoId) => {
+      const acao = this.acoes().find((a) => a.id === acaoId);
+      if (acao) {
+        this.form.controls.precoUnitario.setValue(acao.cotacaoAtual);
+      }
+    });
   }
 
   protected onPageChange(evento: PageEvent): void {
