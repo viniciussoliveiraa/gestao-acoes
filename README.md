@@ -46,7 +46,7 @@ Um frontend Angular consome esta API — ver [`frontend/README.md`](frontend/REA
 | Diferencial | Status |
 |---|---|
 | Feign Client ou WebClient | ✅ Feign Client (`@FeignClient` em todos os adapters de integração) |
-| Testes unitários e/ou de integração | ✅ 121 testes (`@DataJpaTest`, `@WebMvcTest`, integração ponta a ponta, `MockWebServer`) |
+| Testes unitários e/ou de integração | ✅ 140 testes (`@DataJpaTest`, `@WebMvcTest`, integração ponta a ponta, `MockWebServer`) |
 | Paginação nas listagens | ✅ `Pageable`/`Page` em corretoras, ações, lançamentos e proventos |
 | Logs estruturados | ✅ `CorrelationIdFilter` + padrão de log com `correlationId` |
 | Cache para consultas externas | ❌ Não implementado |
@@ -267,7 +267,7 @@ Nesse caso, no IntelliJ use `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:$
 ./mvnw test
 ```
 
-A suíte completa (121 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor. As fatias `@WebMvcTest` de `/carteira` e `/proventos` carregam a `SecurityFilterChain` real para exercitar `401` sem token; as demais desligam os filtros de servlet (`addFilters = false`) por testarem endpoints públicos.
+A suíte completa (140 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor. As fatias `@WebMvcTest` de `/carteira` e `/proventos` carregam a `SecurityFilterChain` real para exercitar `401` sem token; as demais desligam os filtros de servlet (`addFilters = false`) por testarem endpoints públicos.
 
 **Nota de ambiente**: o perfil de testes é fixado por `src/test/resources/application.properties` (`spring.profiles.active=test`). Se os testes começarem a conectar em um PostgreSQL local em vez do H2 em memória, confira esse arquivo — algum editor pode corrompê-lo (ex.: autocomplete inserindo uma quebra de linha no meio de `spring.profiles.active`).
 
@@ -288,6 +288,7 @@ A suíte completa (121 testes na versão atual: unitários, `@DataJpaTest`, `@We
 | `POST` | `/auth/login` | Não | Autentica e retorna um token JWT |
 | `POST` | `/carteira/lancamentos` | **Sim** (Bearer JWT) | Registra uma compra ou venda (tipo, ação, corretora, quantidade, preço, data); venda acima do saldo disponível retorna `422` |
 | `GET` | `/carteira/lancamentos` | **Sim** | Lista os lançamentos do usuário autenticado (paginado) |
+| `DELETE` | `/carteira/lancamentos/{id}` | **Sim** | Exclui um lançamento do próprio usuário (recalcula a posição do ativo) |
 | `GET` | `/carteira/posicoes` | **Sim** | Posições consolidadas por ativo, por custo médio ponderado (quantidade líquida, preço médio, valor investido/atual, variação, resultado realizado em vendas) |
 | `POST` | `/proventos` | **Sim** | Registra um provento (dividendo/JCP) recebido |
 | `GET` | `/proventos` | **Sim** | Lista os proventos do usuário autenticado (paginado, mais recente primeiro) |
@@ -310,7 +311,7 @@ Este projeto usa exclusivamente planos gratuitos/públicos desses provedores; ne
 
 ## Limitações conhecidas do MVP
 
-Fora de escopo (ver `proposal.md`/`design.md` de `openspec/changes/adicionar-carteira-auth-frontend-angular/` e `openspec/changes/adicionar-venda-carteira/`, seção "Non-Goals"): edição/exclusão de lançamentos já registrados, apuração de IR (DARF, isenção mensal, day-trade), refresh token/OAuth2/login social, autorização por papéis (roles/admin), histórico de cotações, cache avançado, circuit breaker, fallback automático entre provedores US, métricas/tracing, filtros de busca além de paginação simples.
+Fora de escopo (ver `proposal.md`/`design.md` de `openspec/changes/adicionar-carteira-auth-frontend-angular/` e `openspec/changes/adicionar-venda-carteira/`, seção "Non-Goals"): edição de lançamentos já registrados (exclusão já é suportada — ver `DELETE /carteira/lancamentos/{id}` acima), apuração de IR (DARF, isenção mensal, day-trade), refresh token/OAuth2/login social, autorização por papéis (roles/admin), histórico de cotações, cache avançado, circuit breaker, fallback automático entre provedores US, métricas/tracing, filtros de busca além de paginação simples.
 
 ## Estrutura do projeto
 

@@ -21,7 +21,7 @@ npm start   # equivalente a `ng serve`, sobe em http://localhost:4200
 1. Abra `http://localhost:4200` → redireciona para `/login`.
 2. Cadastre-se em "Cadastre-se" ou faça login (token JWT armazenado no navegador).
 3. **Corretoras** e **Ações** podem ser cadastradas sem login (endpoints públicos no backend, só cadastro + listagem — sem edição/exclusão) — cadastre ao menos uma de cada para poder registrar lançamentos.
-4. **Lançamentos**: registre uma compra ou venda (tipo + ação + corretora + quantidade + preço + data). Venda é validada contra o saldo disponível do ativo.
+4. **Lançamentos**: registre uma compra ou venda (tipo + ação + corretora + quantidade + preço + data) — ao escolher a ação, o preço unitário já vem preenchido com a cotação atual dela (pode ser ajustado). Venda é validada contra o saldo disponível do ativo. Lançamentos já registrados podem ser excluídos (recalcula a posição do ativo); ainda não há edição.
 5. **Resumo**: mostra a posição consolidada calculada a partir dos lançamentos.
 6. **Proventos**: registre dividendos/JCP recebidos.
 7. **Gráficos**: alocação por ativo e evolução do valor investido.
@@ -63,7 +63,7 @@ Gera os artefatos em `dist/frontend/`. Não há integração automática com o b
 ng test
 ```
 
-Roda a suíte padrão do Angular CLI (Vitest). Cobertura mínima — o esforço de testes automatizados deste projeto está concentrado no backend (121 testes).
+Roda a suíte padrão do Angular CLI (Vitest). Cobertura mínima — o esforço de testes automatizados deste projeto está concentrado no backend (140 testes).
 
 ## Limitações conhecidas
 
