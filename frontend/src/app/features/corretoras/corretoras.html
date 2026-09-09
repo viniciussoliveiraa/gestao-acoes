@@ -56,6 +56,40 @@
   </form>
 </div>
 
+@if (corretoras().length > 0) {
+  <div class="corretoras__stats">
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>account_balance</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Corretoras cadastradas</span>
+        <span class="stat-card__valor">{{ totalCorretoras() }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--positivo">
+        <mat-icon>verified</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Validadas na CVM</span>
+        <span class="stat-card__valor">{{ validadasCvm() }}/{{ totalCorretoras() }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>public</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Estados atendidos</span>
+        <span class="stat-card__valor">{{ estadosAtendidos() }}</span>
+      </div>
+    </div>
+  </div>
+}
+
 <h2 class="section-title">Corretoras cadastradas</h2>
 
 @if (corretoras().length === 0) {

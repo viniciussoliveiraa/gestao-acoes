@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -37,6 +37,10 @@ export class Acoes implements OnInit {
 
   protected readonly mercados: Mercado[] = ['BRASIL', 'ESTADOS_UNIDOS'];
   protected readonly colunas = ['ticker', 'mercado', 'cotacaoAtual', 'acoes'];
+
+  protected readonly totalAcoes = computed(() => this.acoes().length);
+  protected readonly totalBrasil = computed(() => this.acoes().filter((a) => a.mercado === 'BRASIL').length);
+  protected readonly totalEstadosUnidos = computed(() => this.acoes().filter((a) => a.mercado === 'ESTADOS_UNIDOS').length);
 
   private readonly fb = inject(FormBuilder);
 

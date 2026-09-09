@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -31,6 +31,10 @@ export class Corretoras implements OnInit {
   protected readonly sucesso = signal<string | null>(null);
 
   protected readonly colunas = ['razaoSocial', 'cnpj', 'cidade', 'uf', 'validadaCvm'];
+
+  protected readonly totalCorretoras = computed(() => this.corretoras().length);
+  protected readonly validadasCvm = computed(() => this.corretoras().filter((c) => c.validadaCvm).length);
+  protected readonly estadosAtendidos = computed(() => new Set(this.corretoras().map((c) => c.uf)).size);
 
   private readonly fb = inject(FormBuilder);
 

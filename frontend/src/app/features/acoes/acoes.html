@@ -40,6 +40,40 @@
   </form>
 </div>
 
+@if (acoes().length > 0) {
+  <div class="acoes__stats">
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>trending_up</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Ações cadastradas</span>
+        <span class="stat-card__valor">{{ totalAcoes() }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>flag</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Mercado Brasil</span>
+        <span class="stat-card__valor">{{ totalBrasil() }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card surface-card">
+      <div class="stat-card__icon stat-card__icon--primary">
+        <mat-icon>public</mat-icon>
+      </div>
+      <div>
+        <span class="stat-card__label">Mercado EUA</span>
+        <span class="stat-card__valor">{{ totalEstadosUnidos() }}</span>
+      </div>
+    </div>
+  </div>
+}
+
 <h2 class="section-title">Ações cadastradas</h2>
 
 @if (acoes().length === 0) {
