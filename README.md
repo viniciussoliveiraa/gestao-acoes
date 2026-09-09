@@ -190,33 +190,53 @@ Ver `frontend/README.md` para detalhes.
 
 Alternativa à instalação manual do Java, do PostgreSQL e do Node: backend, banco e frontend Angular sobem juntos via Docker Compose (`Dockerfile` + `compose.yaml` na raiz do projeto; `frontend/Dockerfile` para o Angular). Tudo fica atrás de uma única porta publicada — ver detalhes abaixo.
 
-Pré-requisitos: Docker Desktop (Windows/macOS) ou Docker Engine + plugin Compose (Linux).
+### Passo a passo
 
-```bash
-docker --version
-docker compose version
-```
+1. **Instale os pré-requisitos**: Docker Desktop (Windows/macOS) ou Docker Engine + plugin Compose (Linux). Confirme que estão instalados:
+   ```bash
+   docker --version
+   docker compose version
+   ```
+2. **Obtenha o código** (clone o repositório ou copie a pasta do projeto) e abra um terminal na raiz — a pasta que contém `compose.yaml`.
+3. **Crie o arquivo `.env`** a partir do exemplo e ajuste os valores (no mínimo `SPRING_DATASOURCE_PASSWORD` e `JWT_SECRET` — os demais têm padrão funcional):
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+   ```bash
+   # Linux/macOS
+   cp .env.example .env
+   ```
+4. **Suba os três serviços** (PostgreSQL, backend Spring Boot e frontend Angular/Nginx), construindo as imagens na primeira vez:
+   ```bash
+   docker compose up -d --build
+   ```
+   Na primeira execução isso baixa as imagens base e builda o Maven e o Angular dentro do container — pode levar alguns minutos. Execuções seguintes reaproveitam cache e são bem mais rápidas.
+5. **Acompanhe a inicialização** até a aplicação ficar saudável (o frontend só sobe depois que o backend responde no `healthcheck`):
+   ```bash
+   docker compose logs -f aplicacao
+   ```
+6. **Acesse `http://localhost:8080`** no navegador. Frontend e API já estão no ar na mesma porta (Swagger em `http://localhost:8080/swagger-ui.html`) — nenhum outro passo é necessário para uso local.
 
-Se ainda não existir um `.env` na raiz, copie o exemplo e ajuste os valores (principalmente `SPRING_DATASOURCE_PASSWORD` e `JWT_SECRET`):
+Com `APP_PORT=8080` (padrão), o frontend Angular e a API ficam disponíveis na mesma porta. O container `aplicacao` não publica porta própria no host — o Nginx do container `frontend` faz proxy reverso das rotas da API (`/auth`, `/acoes`, `/carteira`, `/corretoras`, `/proventos`, `/actuator`, `/swagger-ui`, `/v3/api-docs`) para ele pela rede interna do Compose. Se `POSTGRES_PORT`/`APP_PORT` estiverem ocupadas, altere-as no `.env` — a comunicação interna entre os containers continua em `postgres:5432` e `aplicacao:8080`.
 
-```powershell
-Copy-Item .env.example .env
-```
+### Liberando o acesso para outras pessoas na mesma rede
 
-Suba os serviços (constrói a imagem na primeira vez):
+Por padrão o Docker publica a porta em todas as interfaces de rede da máquina host (não só `localhost`), então qualquer pessoa na mesma rede local (Wi-Fi/LAN) já consegue acessar sem configuração extra no projeto:
 
-```bash
-./mvnw test
-docker compose up -d --build
-```
+1. **Descubra o IP local da máquina que está rodando os containers**:
+   ```powershell
+   ipconfig    # Windows — veja "Endereço IPv4" do adaptador em uso (ex.: 192.168.0.42)
+   ```
+   ```bash
+   ip addr     # Linux
+   ifconfig    # macOS
+   ```
+2. **Libere a porta no firewall da máquina host**, se necessário. No Windows, ao subir o Docker Desktop pela primeira vez o Firewall do Windows costuma perguntar se libera o acesso em redes privadas — aceite. Se a porta continuar bloqueada, libere manualmente a porta `8080/TCP` (ou o valor de `APP_PORT`) para redes privadas no Firewall do Windows Defender.
+3. **Compartilhe o endereço** `http://<IP-da-máquina>:8080` com a outra pessoa — ela acessa pelo navegador dela, na mesma rede. Não é preciso mexer em CORS: em produção o frontend chama a API com URL relativa (mesma origem, mesmo host/porta — ver `frontend/src/environments/environment.ts`), então funciona automaticamente por qualquer IP/hostname usado para acessar.
 
-Acompanhe os logs da aplicação:
+> Isso cobre acesso dentro da mesma rede local. Para expor a aplicação pela internet (fora da rede local) seria necessário port forwarding no roteador ou um serviço de túnel, além de reforços de segurança que fogem do escopo deste projeto acadêmico — não recomendado sem isso.
 
-```bash
-docker compose logs -f aplicacao
-```
-
-Com `APP_PORT=8080` (padrão), o frontend Angular e a API ficam disponíveis na mesma porta: `http://localhost:8080` (frontend) e `http://localhost:8080/swagger-ui.html` (Swagger). O container `aplicacao` não publica porta própria no host — o Nginx do container `frontend` faz proxy reverso das rotas da API (`/auth`, `/acoes`, `/carteira`, `/corretoras`, `/proventos`, `/actuator`, `/swagger-ui`, `/v3/api-docs`) para ele pela rede interna do Compose. Se `POSTGRES_PORT`/`APP_PORT` estiverem ocupadas, altere-as no `.env` — a comunicação interna entre os containers continua em `postgres:5432` e `aplicacao:8080`.
+### Operação do dia a dia
 
 Parar sem apagar dados / retomar / remover containers (mantendo o volume) / apagar também o banco:
 

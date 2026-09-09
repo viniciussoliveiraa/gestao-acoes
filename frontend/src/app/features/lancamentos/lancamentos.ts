@@ -52,11 +52,16 @@ export class Lancamentos implements OnInit {
   // tabela em si usa a página atual, retornada pelo backend.
   protected readonly todosLancamentos = signal<LancamentoResponse[]>([]);
   protected readonly totalInvestido = computed(() =>
-    this.todosLancamentos().reduce((total, l) => total + l.quantidade * l.precoUnitario, 0)
+    this.todosLancamentos()
+      .filter((l) => l.tipo === 'COMPRA')
+      .reduce((total, l) => total + l.quantidade * l.precoUnitario, 0)
   );
   protected readonly quantidadeLancamentos = computed(() => this.todosLancamentos().length);
+  private readonly quantidadeCompras = computed(
+    () => this.todosLancamentos().filter((l) => l.tipo === 'COMPRA').length
+  );
   protected readonly ticketMedio = computed(() => {
-    const quantidade = this.quantidadeLancamentos();
+    const quantidade = this.quantidadeCompras();
     return quantidade > 0 ? this.totalInvestido() / quantidade : 0;
   });
 
