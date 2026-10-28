@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
+
+    <!-- Aula 14 (controle de acesso): adiciona papel (ADMIN/USER) e situação (ativo/inativo) ao
+         usuário, sem alterar o changeset 003 já aplicado. Usuários existentes recebem USER/ativo
+         por padrão (defaultValue), preservando o comportamento anterior (todo usuário podia
+         operar a própria carteira); times que já tenham dados em produção devem promover um
+         usuário a ADMIN manualmente, ou confiar no bootstrap do administrador inicial. -->
+
+    <changeSet id="007-add-papel-ativo-usuario-postgres-h2" author="gestao-acoes" context="postgres-h2">
+        <addColumn tableName="usuario">
+            <column name="papel" type="VARCHAR(20)" defaultValue="USER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="usuario" columnName="papel"/>
+            <dropColumn tableName="usuario" columnName="ativo"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="007-add-papel-ativo-usuario-mysql" author="gestao-acoes" context="mysql">
+        <addColumn tableName="usuario">
+            <column name="papel" type="VARCHAR(20)" defaultValue="USER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="usuario" columnName="papel"/>
+            <dropColumn tableName="usuario" columnName="ativo"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

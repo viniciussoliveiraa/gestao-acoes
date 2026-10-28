@@ -4,16 +4,29 @@ import br.com.gestaoacoes.dto.LoginRequest;
 import br.com.gestaoacoes.dto.RegistrarUsuarioRequest;
 import br.com.gestaoacoes.exception.CredenciaisInvalidasException;
 import br.com.gestaoacoes.exception.EmailJaCadastradoException;
+import br.com.gestaoacoes.model.Papel;
 import br.com.gestaoacoes.model.Usuario;
 import br.com.gestaoacoes.repository.UsuarioRepository;
+import br.com.gestaoacoes.security.JwtProperties;
 import br.com.gestaoacoes.security.JwtService;
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
@@ -30,11 +43,21 @@ class AuthServiceTest {
     @Mock
     private UsuarioRepository repository;
 
+    @Mock
+    private AuthenticationManager authenticationManager;
+
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    private final JwtService jwtService = new JwtService("segredo-de-teste-com-pelo-menos-32-caracteres-1234", 120);
+    private final JwtService jwtService = jwtServiceDeTeste();
+
+    private static JwtService jwtServiceDeTeste() {
+        String segredo = "segredo-de-teste-com-pelo-menos-32-caracteres-1234";
+        SecretKey chave = new SecretKeySpec(segredo.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        JwtEncoder encoder = new NimbusJwtEncoder(new ImmutableSecret<>(chave));
+        return new JwtService(encoder, new JwtProperties(segredo, 120, "gestao-acoes"));
+    }
 
     private AuthService service() {
-        return new AuthService(repository, passwordEncoder, jwtService);
+        return new AuthService(repository, passwordEncoder, jwtService, authenticationManager);
     }
 
     @Test
@@ -47,6 +70,8 @@ class AuthServiceTest {
         Usuario usuario = service.registrar(request);
 
         assertThat(usuario.getEmail()).isEqualTo("ana@exemplo.com");
+        assertThat(usuario.getPapel()).isEqualTo(Papel.USER);
+        assertThat(usuario.getAtivo()).isTrue();
         assertThat(usuario.getSenhaHash()).isNotEqualTo("senhaSegura123");
         assertThat(passwordEncoder.matches("senhaSegura123", usuario.getSenhaHash())).isTrue();
     }
@@ -63,10 +88,12 @@ class AuthServiceTest {
     }
 
     @Test
-    void loginComCredenciaisValidasRetornaToken() {
+    void loginComCredenciaisValidasRetornaTokenComAuthorities() {
         AuthService service = service();
-        String senhaHash = passwordEncoder.encode("senhaSegura123");
-        Usuario usuario = new Usuario("Ana", "ana@exemplo.com", senhaHash, OffsetDateTime.now());
+        Usuario usuario = new Usuario("Ana", "ana@exemplo.com", "hash-irrelevante", Papel.ADMIN, true, OffsetDateTime.now());
+        when(authenticationManager.authenticate(any()))
+                .thenReturn(new TestingAuthenticationToken("ana@exemplo.com", "senhaSegura123",
+                        AuthorityUtils.createAuthorityList("ROLE_ADMIN")));
         when(repository.findByEmail("ana@exemplo.com")).thenReturn(Optional.of(usuario));
 
         String token = service.login(new LoginRequest("ana@exemplo.com", "senhaSegura123"));
@@ -77,20 +104,29 @@ class AuthServiceTest {
     @Test
     void loginComSenhaIncorretaLancaCredenciaisInvalidas() {
         AuthService service = service();
-        String senhaHash = passwordEncoder.encode("senhaSegura123");
-        Usuario usuario = new Usuario("Ana", "ana@exemplo.com", senhaHash, OffsetDateTime.now());
-        when(repository.findByEmail("ana@exemplo.com")).thenReturn(Optional.of(usuario));
+        when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("senha incorreta"));
 
         assertThatThrownBy(() -> service.login(new LoginRequest("ana@exemplo.com", "senhaErrada")))
-                .isInstanceOf(CredenciaisInvalidasException.class);
+                .isInstanceOf(CredenciaisInvalidasException.class)
+                .hasMessage("Email ou senha inválidos");
     }
 
     @Test
     void loginComEmailInexistenteLancaCredenciaisInvalidasComMensagemGenerica() {
         AuthService service = service();
-        when(repository.findByEmail("ninguem@exemplo.com")).thenReturn(Optional.empty());
+        when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("usuário inexistente"));
 
         assertThatThrownBy(() -> service.login(new LoginRequest("ninguem@exemplo.com", "qualquer")))
+                .isInstanceOf(CredenciaisInvalidasException.class)
+                .hasMessage("Email ou senha inválidos");
+    }
+
+    @Test
+    void loginComUsuarioDesativadoLancaCredenciaisInvalidasComMensagemGenerica() {
+        AuthService service = service();
+        when(authenticationManager.authenticate(any())).thenThrow(new DisabledException("usuário desativado"));
+
+        assertThatThrownBy(() -> service.login(new LoginRequest("ana@exemplo.com", "senhaSegura123")))
                 .isInstanceOf(CredenciaisInvalidasException.class)
                 .hasMessage("Email ou senha inválidos");
     }

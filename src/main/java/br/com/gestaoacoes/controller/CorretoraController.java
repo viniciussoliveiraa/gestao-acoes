@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,8 +31,12 @@ public class CorretoraController {
         this.mapper = mapper;
     }
 
+    // Aula 14 (RBAC): consultar continua público (GET permitido em SecurityConfig); cadastrar
+    // exige autenticação + papel ADMIN — anônimo recebe 401, usuário autenticado sem ADMIN
+    // recebe 403.
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
     public CorretoraResponse registrar(@Valid @RequestBody CorretoraRequest request) {
         Corretora corretora = service.registrar(request);
         return mapper.toResponse(corretora);

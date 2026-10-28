@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,8 +31,11 @@ public class AcaoController {
         this.mapper = mapper;
     }
 
+    // Aula 14 (RBAC): consultar continua público; cadastrar e atualizar cotação exigem
+    // autenticação + papel ADMIN.
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
     public AcaoResponse registrar(@Valid @RequestBody AcaoRequest request) {
         Acao acao = service.registrar(request);
         return mapper.toResponse(acao);
@@ -53,6 +57,7 @@ public class AcaoController {
     }
 
     @PutMapping("/{id}/atualizar-cotacao")
+    @PreAuthorize("hasRole('ADMIN')")
     public AcaoResponse atualizarCotacao(@PathVariable Long id) {
         return mapper.toResponse(service.atualizarCotacao(id));
     }

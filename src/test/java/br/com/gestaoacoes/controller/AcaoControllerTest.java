@@ -8,7 +8,6 @@ import br.com.gestaoacoes.mapper.AcaoMapper;
 import br.com.gestaoacoes.model.Acao;
 import br.com.gestaoacoes.model.Mercado;
 import br.com.gestaoacoes.model.Moeda;
-import br.com.gestaoacoes.security.JwtService;
 import br.com.gestaoacoes.service.AcaoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,13 +33,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// addFilters = false: /acoes é público (SecurityConfig); desliga os filtros de servlet
-// (incluindo JwtAuthenticationFilter, que o @WebMvcTest inclui automaticamente por ser um
-// Filter) para testar só a lógica do controller. JwtService é importado só para satisfazer a
-// dependência do filtro na montagem do contexto — ele nunca chega a ser exercitado aqui.
+// addFilters = false: desliga os filtros de servlet para testar só a lógica do controller.
+// SecurityConfig não é importado aqui, então @EnableMethodSecurity/@PreAuthorize (Aula 14) não
+// avaliam nada nesta fatia — a autorização de /acoes é coberta por AcaoFluxoIntegrationTest
+// (contexto completo, com a stack de segurança real).
 @WebMvcTest(AcaoController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({AcaoMapper.class, JwtService.class})
+@Import({AcaoMapper.class})
 class AcaoControllerTest {
 
     @Autowired

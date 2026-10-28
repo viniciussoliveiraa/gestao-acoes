@@ -11,4 +11,5 @@
     <include file="changes/004-create-lancamento.xml" relativeToChangelogFile="true"/>
     <include file="changes/005-create-provento.xml" relativeToChangelogFile="true"/>
     <include file="changes/006-fix-corretora-validada-cvm-mysql.xml" relativeToChangelogFile="true"/>
+    <include file="changes/007-add-papel-ativo-usuario.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

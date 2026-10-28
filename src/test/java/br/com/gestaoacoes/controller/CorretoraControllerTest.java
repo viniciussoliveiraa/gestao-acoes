@@ -6,7 +6,6 @@ import br.com.gestaoacoes.exception.InstituicaoNaoValidadaException;
 import br.com.gestaoacoes.exception.RecursoNaoEncontradoException;
 import br.com.gestaoacoes.mapper.CorretoraMapper;
 import br.com.gestaoacoes.model.Corretora;
-import br.com.gestaoacoes.security.JwtService;
 import br.com.gestaoacoes.service.CorretoraService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,13 +29,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// addFilters = false: /corretoras é público (SecurityConfig); desliga os filtros de servlet
-// (incluindo JwtAuthenticationFilter, que o @WebMvcTest inclui automaticamente por ser um
-// Filter) para testar só a lógica do controller. JwtService é importado só para satisfazer a
-// dependência do filtro na montagem do contexto — ele nunca chega a ser exercitado aqui.
+// addFilters = false: desliga os filtros de servlet para testar só a lógica do controller.
+// SecurityConfig não é importado aqui, então @EnableMethodSecurity/@PreAuthorize (Aula 14) não
+// avaliam nada nesta fatia — a autorização de /corretoras é coberta por
+// CorretoraFluxoIntegrationTest (contexto completo, com a stack de segurança real).
 @WebMvcTest(CorretoraController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({CorretoraMapper.class, JwtService.class})
+@Import({CorretoraMapper.class})
 class CorretoraControllerTest {
 
     @Autowired

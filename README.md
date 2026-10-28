@@ -46,7 +46,7 @@ Um frontend Angular consome esta API — ver [`frontend/README.md`](frontend/REA
 | Diferencial | Status |
 |---|---|
 | Feign Client ou WebClient | ✅ Feign Client (`@FeignClient` em todos os adapters de integração) |
-| Testes unitários e/ou de integração | ✅ 140 testes (`@DataJpaTest`, `@WebMvcTest`, integração ponta a ponta, `MockWebServer`) |
+| Testes unitários e/ou de integração | ✅ 170 testes (`@DataJpaTest`, `@WebMvcTest`, integração ponta a ponta, `MockWebServer`), com portão de cobertura JaCoCo (`./mvnw clean verify`) |
 | Paginação nas listagens | ✅ `Pageable`/`Page` em corretoras, ações, lançamentos e proventos |
 | Logs estruturados | ✅ `CorrelationIdFilter` + padrão de log com `correlationId` |
 | Cache para consultas externas | ❌ Não implementado |
@@ -107,6 +107,57 @@ O projeto segue os padrões ensinados em [`AULA-10-VARIAVEIS-DE-AMBIENTE`](https
 | `docker compose up/down/stop/start` preservando ou apagando dados conforme o comando | ✅ |
 | Extensão além da aula: serviço `frontend` com proxy reverso, publicando uma única porta | ✅ (frontend Angular não fazia parte da aula original) |
 
+## Aderência às aulas de login JWT, controle de acesso e testes/cobertura
+
+As aulas [`AULA-13-LOGIN-COM-JWT`](https://github.com/jeffersonarpasserini/suporteos2025/blob/main/docs/aulas/AULA-13-LOGIN-COM-JWT.md), [`AULA-14-CONTROLE-DE-ACESSO`](https://github.com/jeffersonarpasserini/suporteos2025/blob/main/docs/aulas/AULA-14-CONTROLE-DE-ACESSO.md) e [`AULA-15-TESTES-E-COBERTURA`](https://github.com/jeffersonarpasserini/suporteos2025/blob/main/docs/aulas/AULA-15-TESTES-E-COBERTURA.md) usam como exemplo o projeto `suporteos2025` (CRUD de grupos/produtos). Como o gestao-acoes já tinha autenticação JWT desde a mudança `adicionar-carteira-auth-frontend-angular` (ver seção de endpoints acima), aplicá-las significou: (Aula 13) trocar a implementação por `JwtEncoder`/`JwtDecoder` nativos do Spring Security, como a aula ensina, em vez de uma lib externa de JWT; (Aula 14) adicionar de fato o RBAC que antes não existia; (Aula 15) adicionar o portão de cobertura JaCoCo que antes não existia. Tag no Git de cada aula: `aula-13-login-jwt`, `aula-14-controle-acesso`, `aula-15-testes-cobertura`.
+
+**Aula 13 — Login com JWT**
+
+| Prática ensinada | Aplicada? |
+|---|---|
+| Senha armazenada só como hash BCrypt, nunca em texto puro | ✅ (já valia desde `adicionar-carteira-auth-frontend-angular`; mantido) |
+| JWT assinado com HS256 via `JwtEncoder`/`JwtDecoder` do próprio Spring Security (sem lib externa) | ✅ `SecurityConfig` (beans `jwtEncoder`/`jwtDecoder`/`jwtSecretKey`) — substitui a implementação anterior baseada em `jjwt`, que era funcionalmente equivalente mas não usava a API nativa do Spring Security exigida pela aula |
+| Propriedades do JWT tipadas e validadas na inicialização (`JwtProperties`) | ✅ falha cedo se `secret` tiver menos de 32 bytes, `expiration-minutes` não for positivo, ou `issuer` estiver em branco |
+| API stateless (`SessionCreationPolicy.STATELESS`) | ✅ (mantido) |
+| Login via `AuthenticationManager`/`DaoAuthenticationProvider` (não comparação manual de senha) | ✅ `AuthService.login` — `UsuarioDetailsService` + `PasswordEncoder` compõem o provider automaticamente |
+| `GET /api/auth/me` (equivalente: `GET /auth/me`) | ✅ devolve o usuário do token autenticado |
+| Distinção clara `401` (sem token/inválido/expirado) vs `403` (autenticado sem permissão) | ✅ ver Aula 14 |
+| Administrador inicial criado no startup, só nos perfis não-`test` | ✅ `AdminInitializer` (perfis `dev`/`mysql`), `APP_ADMIN_EMAIL`/`APP_ADMIN_PASSWORD` sem valor padrão (mesma filosofia de `SPRING_DATASOURCE_PASSWORD`) |
+
+**Aula 14 — Controle de acesso (RBAC)**
+
+Matriz de acesso aplicada ao domínio do gestao-acoes (diferente do `suporteos2025`: aqui corretoras/ações já eram um catálogo público por exigência do enunciado original — RF01-RF12 —, então a aula foi adaptada para não quebrar isso; carteira/proventos já eram por usuário, não por admin):
+
+| Recurso ou operação | Público | `USER` | `ADMIN` |
+|---|:---:|:---:|:---:|
+| `POST /auth/login`, `POST /auth/registrar` | Sim | Sim | Sim |
+| `GET /auth/me` | Não | Sim | Sim |
+| Consultar corretoras/ações (`GET`) | Sim | Sim | Sim |
+| Cadastrar/atualizar corretoras/ações | Não | Não | Sim |
+| Lançamentos e proventos (próprios) | Não | Sim | Sim |
+| Gerenciar usuários (`/usuarios`) | Não | Não | Sim |
+
+| Prática ensinada | Aplicada? |
+|---|---|
+| `@EnableMethodSecurity` + `@PreAuthorize("hasRole('ADMIN')")` | ✅ em `SecurityConfig` e nos métodos de escrita de `CorretoraController`/`AcaoController`, e na classe `UsuarioController` inteira |
+| Papéis (`ADMIN`/`USER`) persistidos e versionados pelo Liquibase | ✅ `Usuario.papel`/`Usuario.ativo`, changeset `007-add-papel-ativo-usuario.xml` (não altera os changesets já aplicados) |
+| Contratos de usuário sem expor hash de senha | ✅ `UsuarioResponse` nunca inclui `senha`/hash; `UsuarioCreateRequest`/`UsuarioUpdateRequest`/`AlterarSenhaRequest` separam cadastro, alteração cadastral e troca de senha |
+| Desativar em vez de excluir (auditoria) | ✅ não há `DELETE /usuarios/{id}`; `PUT /usuarios/{id}` com `ativo=false` desativa (bloqueia logins futuros; tokens já emitidos continuam válidos até expirar, mesma ressalva da aula) |
+| Testes demonstrando `200`/`401`/`403` | ✅ `UsuarioControllerTest`, `CorretoraFluxoIntegrationTest`/`AcaoFluxoIntegrationTest` (cadastro sem token → `401`; com `USER` → `403`; com `ADMIN` → `201`) |
+
+**Aula 15 — Testes, TDD e cobertura (JaCoCo)**
+
+| Prática ensinada | Aplicada? |
+|---|---|
+| `jacoco-maven-plugin` com `prepare-agent`/`report`/`check` no `pom.xml` | ✅ |
+| Portão de cobertura no mínimo medido (não na meta acadêmica) | ✅ `jacoco.minimum.line.coverage=0.85`, `jacoco.minimum.branch.coverage=0.70` — medição real nesta etapa: **96,35% linhas, 77,54% ramos** (818/849 linhas, 107/138 ramos), com margem abaixo do medido para não falhar por flutuação mínima entre execuções |
+| `./mvnw clean verify` gera relatório e aplica o portão | ✅ relatórios em `target/site/jacoco/index.html` (HTML), `jacoco.xml`, `jacoco.csv` |
+| Build falha se a cobertura cair abaixo do portão | ✅ verificado manualmente subindo o mínimo de ramos para `0.80` via `-Djacoco.minimum.branch.coverage=0.80` (falha, como esperado, pois o real é 77,54%) e confirmando que `./mvnw clean verify` sem overrides volta a passar |
+| Testes novos cobrindo as áreas antes sem cobertura (Aulas 13/14) | ✅ `UsuarioServiceTest`, `UsuarioControllerTest`, `AdminInitializerTest`, `JwtDecoderValidationTest` (token adulterado/expirado/emissor errado), `JwtPrincipalConverterTest` |
+| Suíte cresceu sem reduzir o enunciado de nenhum teste existente | ✅ 170 testes (eram 140), 0 falhas |
+
+**Meta acadêmica declarada**: 80% linhas / 80% ramos. Linhas já superam a meta (96,35%); ramos estão em 77,54%, abaixo da meta mas acima do portão configurado — a progressão recomendada pela aula (`55% → 60% → 70% → 80%`) aqui seria `70% → 77,54% → 80%`, elevando o portão conforme novos testes de borda forem adicionados (ex.: cenários de erro ainda não exercitados nos adaptadores de integração).
+
 ## Pré-requisitos
 
 - Java 17 (Eclipse Temurin recomendado)
@@ -158,8 +209,10 @@ Ver `.env.example` para a lista completa. Resumo:
 | `BRAPI_BASE_URL`, `BRAPI_TOKEN` | Token opcional para os tickers `PETR4`, `MGLU3`, `VALE3`, `ITUB4`; obrigatório para os demais | Cotações do mercado brasileiro |
 | `TWELVE_DATA_BASE_URL`, `TWELVE_DATA_API_KEY` | Chave obrigatória se `us-provider=twelve-data` | Cotações do mercado americano |
 | `ALPHA_VANTAGE_BASE_URL`, `ALPHA_VANTAGE_API_KEY` | Chave obrigatória se `us-provider=alpha-vantage` | Cotações do mercado americano (alternativa) |
-| `JWT_SECRET` | Não (tem padrão só para dev — troque em qualquer ambiente real) | Segredo de assinatura dos tokens JWT (login) |
+| `JWT_SECRET` | Não (tem padrão só para dev — troque em qualquer ambiente real) | Segredo de assinatura dos tokens JWT (login), mínimo 32 bytes (validado na inicialização) |
 | `APP_JWT_EXPIRATION_MINUTES` | Não (padrão `120`) | Validade do token JWT |
+| `APP_JWT_ISSUER` | Não (padrão `gestao-acoes`) | Emissor (`iss`) embutido no token e exigido na validação |
+| `APP_ADMIN_NOME`, `APP_ADMIN_EMAIL`, `APP_ADMIN_PASSWORD` | `EMAIL`/`PASSWORD` sim (perfis `dev`/`mysql`; nunca em `test`) | Administrador inicial (Aula 14), criado no startup se o email ainda não existir — mesma filosofia de `SPRING_DATASOURCE_PASSWORD`: sem valor padrão, de propósito |
 | `APP_CORS_ALLOWED_ORIGINS` | Não (padrão `http://localhost:4200`) | Origem(ns) liberada(s) para o frontend Angular |
 
 Nenhuma chave real está versionada no repositório; `.env.example` contém apenas placeholders.
@@ -217,7 +270,7 @@ Alternativa à instalação manual do Java, do PostgreSQL e do Node: backend, ba
    ```
 6. **Acesse `http://localhost:8080`** no navegador. Frontend e API já estão no ar na mesma porta (Swagger em `http://localhost:8080/swagger-ui.html`) — nenhum outro passo é necessário para uso local.
 
-Com `APP_PORT=8080` (padrão), o frontend Angular e a API ficam disponíveis na mesma porta. O container `aplicacao` não publica porta própria no host — o Nginx do container `frontend` faz proxy reverso das rotas da API (`/auth`, `/acoes`, `/carteira`, `/corretoras`, `/proventos`, `/actuator`, `/swagger-ui`, `/v3/api-docs`) para ele pela rede interna do Compose. Se `POSTGRES_PORT`/`APP_PORT` estiverem ocupadas, altere-as no `.env` — a comunicação interna entre os containers continua em `postgres:5432` e `aplicacao:8080`.
+Com `APP_PORT=8080` (padrão), o frontend Angular e a API ficam disponíveis na mesma porta. O container `aplicacao` não publica porta própria no host — o Nginx do container `frontend` faz proxy reverso das rotas da API (`/auth`, `/acoes`, `/carteira`, `/corretoras`, `/proventos`, `/usuarios`, `/actuator`, `/swagger-ui`, `/v3/api-docs`) para ele pela rede interna do Compose. Se `POSTGRES_PORT`/`APP_PORT` estiverem ocupadas, altere-as no `.env` — a comunicação interna entre os containers continua em `postgres:5432` e `aplicacao:8080`.
 
 ### Liberando o acesso para outras pessoas na mesma rede
 
@@ -267,7 +320,13 @@ Nesse caso, no IntelliJ use `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:$
 ./mvnw test
 ```
 
-A suíte completa (140 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor. As fatias `@WebMvcTest` de `/carteira` e `/proventos` carregam a `SecurityFilterChain` real para exercitar `401` sem token; as demais desligam os filtros de servlet (`addFilters = false`) por testarem endpoints públicos.
+A suíte completa (170 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor. As fatias `@WebMvcTest` de `/carteira`, `/proventos`, `/usuarios` e de `/auth` (só o teste de `/auth/me`) carregam a `SecurityFilterChain` real (`SecurityConfig` + `JwtPrincipalConverter`) para exercitar `401`/`403` de verdade; as demais (`/corretoras`, `/acoes`) desligam os filtros de servlet (`addFilters = false`) por testarem só a lógica do controller — a autorização desses dois endpoints é coberta pelos testes de integração ponta a ponta (`CorretoraFluxoIntegrationTest`/`AcaoFluxoIntegrationTest`), com contexto completo.
+
+```bash
+./mvnw clean verify
+```
+
+Além dos testes, `verify` gera o relatório de cobertura JaCoCo (`target/site/jacoco/index.html`) e falha o build se a cobertura cair abaixo do portão configurado em `pom.xml` (`jacoco.minimum.line.coverage`/`jacoco.minimum.branch.coverage`) — ver detalhes na seção [Aderência às aulas de login JWT, controle de acesso e testes/cobertura](#aderência-às-aulas-de-login-jwt-controle-de-acesso-e-testescobertura).
 
 **Nota de ambiente**: o perfil de testes é fixado por `src/test/resources/application.properties` (`spring.profiles.active=test`). Se os testes começarem a conectar em um PostgreSQL local em vez do H2 em memória, confira esse arquivo — algum editor pode corrompê-lo (ex.: autocomplete inserindo uma quebra de linha no meio de `spring.profiles.active`).
 
@@ -275,17 +334,23 @@ A suíte completa (140 testes na versão atual: unitários, `@DataJpaTest`, `@We
 
 | Método | Caminho | Autenticação | Descrição |
 |---|---|---|---|
-| `POST` | `/corretoras` | Não | Cadastra corretora (CNPJ validado + enriquecido via BrasilAPI, validado na CVM, endereço via ViaCEP) |
+| `POST` | `/corretoras` | **Sim** (ADMIN) | Cadastra corretora (CNPJ validado + enriquecido via BrasilAPI, validado na CVM, endereço via ViaCEP) |
 | `GET` | `/corretoras` | Não | Lista corretoras (paginado) |
 | `GET` | `/corretoras/{id}` | Não | Busca corretora por ID |
 | `GET` | `/corretoras/cnpj/{cnpj}` | Não | Busca corretora por CNPJ (com ou sem máscara) |
-| `POST` | `/acoes` | Não | Cadastra ação (ticker validado e cotação obtida do provedor do mercado) |
+| `POST` | `/acoes` | **Sim** (ADMIN) | Cadastra ação (ticker validado e cotação obtida do provedor do mercado) |
 | `GET` | `/acoes` | Não | Lista ações (paginado) |
 | `GET` | `/acoes/{id}` | Não | Busca ação por ID |
 | `GET` | `/acoes/ticker/{ticker}` | Não | Busca ação por ticker (globalmente único — RN07) |
-| `PUT` | `/acoes/{id}/atualizar-cotacao` | Não | Atualiza a cotação de uma ação já cadastrada |
-| `POST` | `/auth/registrar` | Não | Cadastra usuário (nome, email, senha) |
-| `POST` | `/auth/login` | Não | Autentica e retorna um token JWT |
+| `PUT` | `/acoes/{id}/atualizar-cotacao` | **Sim** (ADMIN) | Atualiza a cotação de uma ação já cadastrada |
+| `POST` | `/auth/registrar` | Não | Cadastra usuário (nome, email, senha) — sempre com papel `USER` |
+| `POST` | `/auth/login` | Não | Autentica e retorna um token JWT (inclui as authorities do papel do usuário) |
+| `GET` | `/auth/me` | **Sim** | Devolve o usuário representado pelo token (nome, email, papel, situação) |
+| `GET` | `/usuarios` | **Sim** (ADMIN) | Lista usuários cadastrados (paginado) |
+| `GET` | `/usuarios/{id}` | **Sim** (ADMIN) | Busca usuário por ID |
+| `POST` | `/usuarios` | **Sim** (ADMIN) | Cadastra usuário definindo o papel explicitamente (`ADMIN` ou `USER`) |
+| `PUT` | `/usuarios/{id}` | **Sim** (ADMIN) | Altera nome, email, papel e situação (`ativo`) de um usuário |
+| `PUT` | `/usuarios/{id}/senha` | **Sim** (ADMIN) | Define uma nova senha para o usuário |
 | `POST` | `/carteira/lancamentos` | **Sim** (Bearer JWT) | Registra uma compra ou venda (tipo, ação, corretora, quantidade, preço, data); venda acima do saldo disponível retorna `422` |
 | `GET` | `/carteira/lancamentos` | **Sim** | Lista os lançamentos do usuário autenticado (paginado) |
 | `DELETE` | `/carteira/lancamentos/{id}` | **Sim** | Exclui um lançamento do próprio usuário (recalcula a posição do ativo) |
@@ -293,9 +358,9 @@ A suíte completa (140 testes na versão atual: unitários, `@DataJpaTest`, `@We
 | `POST` | `/proventos` | **Sim** | Registra um provento (dividendo/JCP) recebido |
 | `GET` | `/proventos` | **Sim** | Lista os proventos do usuário autenticado (paginado, mais recente primeiro) |
 
-Os endpoints de corretoras e ações permanecem públicos (sem exigir login) — só carteira e proventos exigem `Authorization: Bearer {token}` obtido em `/auth/login`. Ver a decisão registrada em `openspec/changes/adicionar-carteira-auth-frontend-angular/design.md`.
+Consultar corretoras e ações continua público (sem login), preservando RF01-RF12 do MVP original. Cadastrar/atualizar corretoras e ações agora exige autenticação **e** papel `ADMIN` (Aula 14 — RBAC): sem token é `401`; autenticado mas sem `ADMIN` é `403`. Carteira e proventos continuam exigindo apenas um usuário autenticado (qualquer papel), já que cada um opera só a própria carteira — isso nunca dependeu de ser `ADMIN`. Ver a decisão original em `openspec/changes/adicionar-carteira-auth-frontend-angular/design.md` e a extensão de RBAC na seção [Aderência às aulas de segurança e testes](#aderência-às-aulas-de-login-jwt-controle-de-acesso-e-testescobertura) abaixo.
 
-Payloads, exemplos de sucesso/erro e todos os códigos HTTP estão documentados no Swagger UI (botão "Authorize" para informar o token JWT) e nas specs em `openspec/changes/criar-sistema-gestao-acoes/specs/` e `openspec/changes/adicionar-carteira-auth-frontend-angular/specs/`. Uma coleção Postman com exemplos prontos está em `postman/gestao-acoes.postman_collection.json`.
+Payloads, exemplos de sucesso/erro e todos os códigos HTTP estão documentados no Swagger UI (botão "Authorize" para informar o token JWT) e nas specs em `openspec/specs/` (baseline atual; as mudanças que as originaram estão arquivadas em `openspec/changes/archive/`). Uma coleção Postman com exemplos prontos está em `postman/gestao-acoes.postman_collection.json`.
 
 ## Integrações externas — limitações e observações (verificado em 2026-08-12)
 
@@ -311,7 +376,7 @@ Este projeto usa exclusivamente planos gratuitos/públicos desses provedores; ne
 
 ## Limitações conhecidas do MVP
 
-Fora de escopo (ver `proposal.md`/`design.md` de `openspec/changes/adicionar-carteira-auth-frontend-angular/` e `openspec/changes/adicionar-venda-carteira/`, seção "Non-Goals"): edição de lançamentos já registrados (exclusão já é suportada — ver `DELETE /carteira/lancamentos/{id}` acima), apuração de IR (DARF, isenção mensal, day-trade), refresh token/OAuth2/login social, autorização por papéis (roles/admin), histórico de cotações, cache avançado, circuit breaker, fallback automático entre provedores US, métricas/tracing, filtros de busca além de paginação simples.
+Fora de escopo (ver `proposal.md`/`design.md` de `openspec/changes/archive/*/`, seção "Non-Goals"): edição de lançamentos já registrados (exclusão já é suportada — ver `DELETE /carteira/lancamentos/{id}` acima), apuração de IR (DARF, isenção mensal, day-trade), refresh token/OAuth2/login social, revogação de token antes da expiração (desativar um usuário bloqueia logins futuros, mas um token já emitido continua válido até expirar — ver Aula 14 na seção de aderência), histórico de cotações, cache avançado, circuit breaker, fallback automático entre provedores US, métricas/tracing, filtros de busca além de paginação simples. Autorização por papéis (RBAC) **deixou de ser uma limitação**: implementada na Aula 14 (ver seção de aderência), com papéis `ADMIN`/`USER`.
 
 ## Estrutura do projeto
 
@@ -324,8 +389,8 @@ src/main/java/br/com/gestaoacoes/
   dto/            payloads de entrada/saída (nunca as entidades diretamente)
   mapper/         entidade -> DTO
   exception/      exceções de domínio + handler global (ProblemDetail)
-  config/         filtros, segurança (Spring Security) e configuração transversal
-  security/       JWT (geração/validação, filtro de autenticação, handlers de erro)
+  config/         segurança (Spring Security, RBAC), bootstrap do admin inicial e configuração transversal
+  security/       JWT (emissão via JwtEncoder, UserDetailsService, conversor de authorities, handlers de erro)
   integration/    portas + adaptadores por provedor externo (Ports and Adapters)
 
 frontend/         aplicação Angular (interface do sistema) — ver frontend/README.md

@@ -8,8 +8,7 @@ import br.com.gestaoacoes.model.Mercado;
 import br.com.gestaoacoes.model.Moeda;
 import br.com.gestaoacoes.model.Provento;
 import br.com.gestaoacoes.model.TipoProvento;
-import br.com.gestaoacoes.security.JwtAuthenticationFilter;
-import br.com.gestaoacoes.security.JwtService;
+import br.com.gestaoacoes.security.JwtPrincipalConverter;
 import br.com.gestaoacoes.security.ProblemDetailAccessDeniedHandler;
 import br.com.gestaoacoes.security.ProblemDetailAuthEntryPoint;
 import br.com.gestaoacoes.service.ProventoService;
@@ -39,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // /proventos exige autenticação: mesma abordagem de CarteiraControllerTest (stack de segurança
 // real importada para exercitar 401 sem token e autenticação simulada via postprocessor).
 @WebMvcTest(ProventoController.class)
-@Import({ProventoMapper.class, SecurityConfig.class, JwtAuthenticationFilter.class, JwtService.class,
+@Import({ProventoMapper.class, SecurityConfig.class, JwtPrincipalConverter.class,
         ProblemDetailAuthEntryPoint.class, ProblemDetailAccessDeniedHandler.class})
 class ProventoControllerTest {
 

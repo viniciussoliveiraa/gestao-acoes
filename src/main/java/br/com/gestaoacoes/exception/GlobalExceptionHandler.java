@@ -5,6 +5,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -41,6 +42,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleMessageNotReadable(HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, "Corpo da requisição inválido ou malformado", request);
+    }
+
+    /**
+     * Aula 14 (RBAC): {@code @PreAuthorize} negado lança {@code AuthorizationDeniedException}
+     * (subclasse desta) de dentro do método do controller — portanto este {@code @ControllerAdvice}
+     * a intercepta antes do {@code ExceptionTranslationFilter} da cadeia de segurança, que nunca
+     * chegaria a vê-la. Sem este handler, cairia no fallback genérico (500) em vez de 403.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied(HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, "Acesso negado ao recurso solicitado", request);
     }
 
     /**

@@ -11,8 +11,7 @@ import br.com.gestaoacoes.model.Lancamento;
 import br.com.gestaoacoes.model.Mercado;
 import br.com.gestaoacoes.model.Moeda;
 import br.com.gestaoacoes.model.TipoLancamento;
-import br.com.gestaoacoes.security.JwtAuthenticationFilter;
-import br.com.gestaoacoes.security.JwtService;
+import br.com.gestaoacoes.security.JwtPrincipalConverter;
 import br.com.gestaoacoes.security.ProblemDetailAccessDeniedHandler;
 import br.com.gestaoacoes.security.ProblemDetailAuthEntryPoint;
 import br.com.gestaoacoes.service.CarteiraService;
@@ -46,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // aqui a stack de segurança real (SecurityConfig + filtro JWT + handlers) entra no contexto para
 // exercitar de fato o 401 sem token e a autenticação simulada via SecurityMockMvcRequestPostProcessors.
 @WebMvcTest(CarteiraController.class)
-@Import({LancamentoMapper.class, SecurityConfig.class, JwtAuthenticationFilter.class, JwtService.class,
+@Import({LancamentoMapper.class, SecurityConfig.class, JwtPrincipalConverter.class,
         ProblemDetailAuthEntryPoint.class, ProblemDetailAccessDeniedHandler.class})
 class CarteiraControllerTest {
 

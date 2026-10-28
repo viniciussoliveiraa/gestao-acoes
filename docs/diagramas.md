@@ -40,6 +40,8 @@ erDiagram
         varchar nome
         varchar email UK
         varchar senha_hash
+        varchar papel "ADMIN ou USER (Aula 14)"
+        boolean ativo "Aula 14: desativar em vez de excluir"
         timestamptz criado_em
     }
 
@@ -115,7 +117,7 @@ flowchart LR
 
 Este é o mesmo diagrama de `openspec/changes/criar-sistema-gestao-acoes/design.md`, reproduzido aqui para consulta rápida sem precisar abrir os artefatos OpenSpec. Os fluxos de sequência (cadastro de corretora, cadastro/atualização de ação) estão detalhados em `design.md`.
 
-## Autenticação e carteira (frontend Angular)
+## Autenticação, RBAC e carteira (frontend Angular)
 
 ```mermaid
 flowchart LR
@@ -123,16 +125,22 @@ flowchart LR
   AuthC[AuthController]
   CartC[CarteiraController]
   ProvC[ProventoController]
-  JwtFilter[JwtAuthenticationFilter]
+  CorretoraC["CorretoraController / AcaoController<br/>(POST/PUT: @PreAuthorize ADMIN)"]
+  UsuarioC["UsuarioController<br/>(classe inteira: @PreAuthorize ADMIN)"]
+  Oauth2["oauth2ResourceServer (JwtDecoder + JwtPrincipalConverter)"]
   DB[(PostgreSQL/H2)]
 
   UI -- "POST /auth/login" --> AuthC --> DB
-  AuthC -- token JWT --> UI
-  UI -- "Authorization: Bearer token" --> JwtFilter
-  JwtFilter -- usuarioId resolvido --> CartC
-  JwtFilter -- usuarioId resolvido --> ProvC
+  AuthC -- "token JWT (sub=usuarioId, authorities=ROLE_*)" --> UI
+  UI -- "Authorization: Bearer token" --> Oauth2
+  Oauth2 -- "usuarioId + authorities" --> CartC
+  Oauth2 -- "usuarioId + authorities" --> ProvC
+  Oauth2 -- "usuarioId + authorities" --> CorretoraC
+  Oauth2 -- "usuarioId + authorities" --> UsuarioC
   CartC --> DB
   ProvC --> DB
+  CorretoraC --> DB
+  UsuarioC --> DB
 ```
 
-`/corretoras` e `/acoes` continuam públicos e não passam pelo `JwtAuthenticationFilter` como exigência — o Angular os consome normalmente, com ou sem usuário logado. Detalhes em `openspec/changes/adicionar-carteira-auth-frontend-angular/design.md`.
+`GET /corretoras` e `GET /acoes` continuam públicos (RF01-RF12 do MVP original). `POST`/`PUT` nesses dois controllers e toda a classe `UsuarioController` exigem autenticação **e** papel `ADMIN` (Aula 14 — RBAC): o `JwtDecoder` valida assinatura/emissor/expiração do token, e o `JwtPrincipalConverter` extrai o `usuarioId` (claim `sub`, preservando `@AuthenticationPrincipal Long usuarioId` em `CarteiraController`/`ProventoController`) e as `authorities` (claim `authorities`, usada por `@PreAuthorize("hasRole('ADMIN')")`). Carteira e proventos continuam exigindo só um usuário autenticado (qualquer papel), já que cada um opera a própria carteira. Detalhes em `openspec/changes/archive/*/design.md` e no README, seção "Aderência às aulas de login JWT, controle de acesso e testes/cobertura".
