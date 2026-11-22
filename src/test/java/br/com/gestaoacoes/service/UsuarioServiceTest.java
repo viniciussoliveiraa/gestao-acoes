@@ -5,6 +5,7 @@ import br.com.gestaoacoes.dto.UsuarioCreateRequest;
 import br.com.gestaoacoes.dto.UsuarioUpdateRequest;
 import br.com.gestaoacoes.exception.EmailJaCadastradoException;
 import br.com.gestaoacoes.exception.RecursoNaoEncontradoException;
+import br.com.gestaoacoes.exception.UltimoAdministradorException;
 import br.com.gestaoacoes.model.Papel;
 import br.com.gestaoacoes.model.Usuario;
 import br.com.gestaoacoes.repository.UsuarioRepository;
@@ -26,6 +27,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,6 +101,19 @@ class UsuarioServiceTest {
         assertThat(atualizado.getAtivo()).isFalse();
     }
 
+    // TDD ciclo 1 (Aula 15): UsuarioUpdateRequest recebe o nome, mas o serviço o descartava.
+    @Test
+    void atualizarAlteraONome() {
+        Usuario existente = usuarioExistente(1L, "a@exemplo.com", Papel.USER);
+        when(repository.findById(1L)).thenReturn(Optional.of(existente));
+        when(repository.findByEmail("a@exemplo.com")).thenReturn(Optional.of(existente));
+        when(repository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Usuario atualizado = service().atualizar(1L, new UsuarioUpdateRequest("  Ana Souza ", "a@exemplo.com", Papel.USER, true));
+
+        assertThat(atualizado.getNome()).isEqualTo("Ana Souza");
+    }
+
     @Test
     void atualizarMantendoOProprioEmailNaoLancaConflito() {
         Usuario existente = usuarioExistente(1L, "mesmo@exemplo.com", Papel.USER);
@@ -119,6 +135,72 @@ class UsuarioServiceTest {
 
         assertThatThrownBy(() -> service().atualizar(1L, new UsuarioUpdateRequest("Nome", "b@exemplo.com", Papel.USER, true)))
                 .isInstanceOf(EmailJaCadastradoException.class);
+    }
+
+    // TDD ciclo 2 (Aula 14, seção 12.1): o sistema nunca pode ficar sem administrador ativo.
+    @Test
+    void rebaixarOUltimoAdministradorAtivoLancaExcecao() {
+        Usuario admin = usuarioExistente(1L, "admin@exemplo.com", Papel.ADMIN);
+        when(repository.findById(1L)).thenReturn(Optional.of(admin));
+        when(repository.findByEmail("admin@exemplo.com")).thenReturn(Optional.of(admin));
+        when(repository.countByPapelAndAtivoTrue(Papel.ADMIN)).thenReturn(1L);
+
+        assertThatThrownBy(() -> service().atualizar(1L, new UsuarioUpdateRequest("Admin", "admin@exemplo.com", Papel.USER, true)))
+                .isInstanceOf(UltimoAdministradorException.class)
+                .hasMessageContaining("último administrador");
+        verify(repository, never()).save(any(Usuario.class));
+    }
+
+    @Test
+    void desativarOUltimoAdministradorAtivoLancaExcecao() {
+        Usuario admin = usuarioExistente(1L, "admin@exemplo.com", Papel.ADMIN);
+        when(repository.findById(1L)).thenReturn(Optional.of(admin));
+        when(repository.findByEmail("admin@exemplo.com")).thenReturn(Optional.of(admin));
+        when(repository.countByPapelAndAtivoTrue(Papel.ADMIN)).thenReturn(1L);
+
+        assertThatThrownBy(() -> service().atualizar(1L, new UsuarioUpdateRequest("Admin", "admin@exemplo.com", Papel.ADMIN, false)))
+                .isInstanceOf(UltimoAdministradorException.class);
+        verify(repository, never()).save(any(Usuario.class));
+    }
+
+    @Test
+    void rebaixarAdministradorQuandoExisteOutroAdministradorAtivoEhPermitido() {
+        Usuario admin = usuarioExistente(1L, "admin@exemplo.com", Papel.ADMIN);
+        when(repository.findById(1L)).thenReturn(Optional.of(admin));
+        when(repository.findByEmail("admin@exemplo.com")).thenReturn(Optional.of(admin));
+        when(repository.countByPapelAndAtivoTrue(Papel.ADMIN)).thenReturn(2L);
+        when(repository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Usuario atualizado = service().atualizar(1L, new UsuarioUpdateRequest("Admin", "admin@exemplo.com", Papel.USER, true));
+
+        assertThat(atualizado.getPapel()).isEqualTo(Papel.USER);
+    }
+
+    @Test
+    void manterOUltimoAdministradorComoAdminAtivoNaoConsultaContagem() {
+        Usuario admin = usuarioExistente(1L, "admin@exemplo.com", Papel.ADMIN);
+        when(repository.findById(1L)).thenReturn(Optional.of(admin));
+        when(repository.findByEmail("admin@exemplo.com")).thenReturn(Optional.of(admin));
+        when(repository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Usuario atualizado = service().atualizar(1L, new UsuarioUpdateRequest("Novo Nome", "admin@exemplo.com", Papel.ADMIN, true));
+
+        assertThat(atualizado.getNome()).isEqualTo("Novo Nome");
+        verify(repository, never()).countByPapelAndAtivoTrue(any());
+    }
+
+    @Test
+    void reativarAdministradorDesativadoNaoConsultaContagem() {
+        Usuario admin = usuarioExistente(1L, "admin@exemplo.com", Papel.ADMIN);
+        admin.setAtivo(false);
+        when(repository.findById(1L)).thenReturn(Optional.of(admin));
+        when(repository.findByEmail("admin@exemplo.com")).thenReturn(Optional.of(admin));
+        when(repository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Usuario atualizado = service().atualizar(1L, new UsuarioUpdateRequest("Admin", "admin@exemplo.com", Papel.USER, false));
+
+        assertThat(atualizado.getPapel()).isEqualTo(Papel.USER);
+        verify(repository, never()).countByPapelAndAtivoTrue(any());
     }
 
     @Test

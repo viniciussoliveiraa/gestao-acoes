@@ -68,7 +68,7 @@ export class Registro {
   protected readonly form = this.fb.nonNullable.group({
     nome: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    senha: ['', [Validators.required, Validators.minLength(8)]],
+    senha: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(72)]],
   });
 
   constructor(

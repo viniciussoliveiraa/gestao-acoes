@@ -91,6 +91,10 @@ public class Usuario {
         return criadoEm;
     }
 
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
     public void setEmail(String email) {
         this.email = email;
     }

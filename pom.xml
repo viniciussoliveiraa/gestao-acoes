@@ -29,12 +29,12 @@
     <properties>
         <java.version>17</java.version>
         <spring-cloud.version>2025.1.2</spring-cloud.version>
-        <!-- Aula 15: portão de cobertura JaCoCo. Os mínimos abaixo são a cobertura real medida
-             nesta etapa (arredondada para baixo), não a meta acadêmica — ver a seção de
-             cobertura no README para o plano de elevação gradual até 80%/80%. -->
+        <!-- Aula 15: portão de cobertura JaCoCo. Ramos subiram de 0.70 para 0.80 (meta acadêmica)
+             só depois que a suíte passou a sustentar 84,87% medidos — ver
+             docs/evidencias-aulas-13-14-15.md. Nunca reduzir estes valores para o build passar. -->
         <jacoco.version>0.8.12</jacoco.version>
         <jacoco.minimum.line.coverage>0.85</jacoco.minimum.line.coverage>
-        <jacoco.minimum.branch.coverage>0.70</jacoco.minimum.branch.coverage>
+        <jacoco.minimum.branch.coverage>0.80</jacoco.minimum.branch.coverage>
     </properties>
     <dependencies>
         <dependency>
@@ -129,9 +129,12 @@
             <version>5.4.0</version>
             <scope>test</scope>
         </dependency>
+        <!-- Spring Boot 4: além de trazer o spring-security-test, este starter liga o Spring
+             Security ao MockMvc auto-configurado. Sem ele, @WithMockUser (Aulas 13/14) não chega
+             à cadeia de filtros e toda requisição "autenticada" pela anotação vira 401. -->
         <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -5,6 +5,8 @@ import br.com.gestaoacoes.dto.UsuarioCreateRequest;
 import br.com.gestaoacoes.dto.UsuarioUpdateRequest;
 import br.com.gestaoacoes.exception.EmailJaCadastradoException;
 import br.com.gestaoacoes.exception.RecursoNaoEncontradoException;
+import br.com.gestaoacoes.exception.UltimoAdministradorException;
+import br.com.gestaoacoes.model.Papel;
 import br.com.gestaoacoes.model.Usuario;
 import br.com.gestaoacoes.repository.UsuarioRepository;
 import org.springframework.data.domain.Page;
@@ -62,7 +64,9 @@ public class UsuarioService {
         Usuario usuario = buscarPorId(id);
         String email = normalizarEmail(request.email());
         validarEmailDisponivel(email, id);
+        validarQueNaoRemoveOUltimoAdministrador(usuario, request);
 
+        usuario.setNome(request.nome().trim());
         usuario.setEmail(email);
         usuario.setPapel(request.papel());
         usuario.setAtivo(request.ativo());
@@ -82,6 +86,21 @@ public class UsuarioService {
                 .ifPresent(usuario -> {
                     throw new EmailJaCadastradoException("Já existe um usuário cadastrado com este email");
                 });
+    }
+
+    /**
+     * Aula 14, seção 12.1: rebaixar ou desativar o último {@code ADMIN} ativo deixaria o sistema
+     * sem ninguém capaz de gerenciar usuários. Só consulta a contagem quando a alteração de fato
+     * tira um administrador ativo dessa condição.
+     */
+    private void validarQueNaoRemoveOUltimoAdministrador(Usuario usuario, UsuarioUpdateRequest request) {
+        boolean eraAdministradorAtivo = usuario.getPapel() == Papel.ADMIN && Boolean.TRUE.equals(usuario.getAtivo());
+        boolean continuaAdministradorAtivo = request.papel() == Papel.ADMIN && Boolean.TRUE.equals(request.ativo());
+        if (eraAdministradorAtivo && !continuaAdministradorAtivo
+                && repository.countByPapelAndAtivoTrue(Papel.ADMIN) <= 1) {
+            throw new UltimoAdministradorException(
+                    "Não é possível rebaixar ou desativar o último administrador ativo");
+        }
     }
 
     private String normalizarEmail(String email) {

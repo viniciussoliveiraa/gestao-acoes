@@ -96,6 +96,29 @@
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
           }
+        },
+        {
+          "name": "Token adulterado (-> 401)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Aula 13, seção 12.4 (experimento 3): troca um caractere da assinatura do token válido.",
+                  "const token = pm.collectionVariables.get('token') || pm.environment.get('token') || '';",
+                  "const pos = token.lastIndexOf('.') + 5;",
+                  "const trocado = token.charAt(pos) === 'A' ? 'B' : 'A';",
+                  "pm.variables.set('tokenAdulterado', token.substring(0, pos) + trocado + token.substring(pos + 1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdulterado}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          }
         }
       ]
     },

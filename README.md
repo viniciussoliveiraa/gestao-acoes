@@ -46,7 +46,7 @@ Um frontend Angular consome esta API — ver [`frontend/README.md`](frontend/REA
 | Diferencial | Status |
 |---|---|
 | Feign Client ou WebClient | ✅ Feign Client (`@FeignClient` em todos os adapters de integração) |
-| Testes unitários e/ou de integração | ✅ 170 testes (`@DataJpaTest`, `@WebMvcTest`, integração ponta a ponta, `MockWebServer`), com portão de cobertura JaCoCo (`./mvnw clean verify`) |
+| Testes unitários e/ou de integração | ✅ 222 testes (`@DataJpaTest`, `@WebMvcTest`, integração ponta a ponta, `MockWebServer`), com portão de cobertura JaCoCo (`./mvnw clean verify`) |
 | Paginação nas listagens | ✅ `Pageable`/`Page` em corretoras, ações, lançamentos e proventos |
 | Logs estruturados | ✅ `CorrelationIdFilter` + padrão de log com `correlationId` |
 | Cache para consultas externas | ❌ Não implementado |
@@ -143,20 +143,291 @@ Matriz de acesso aplicada ao domínio do gestao-acoes (diferente do `suporteos20
 | Papéis (`ADMIN`/`USER`) persistidos e versionados pelo Liquibase | ✅ `Usuario.papel`/`Usuario.ativo`, changeset `007-add-papel-ativo-usuario.xml` (não altera os changesets já aplicados) |
 | Contratos de usuário sem expor hash de senha | ✅ `UsuarioResponse` nunca inclui `senha`/hash; `UsuarioCreateRequest`/`UsuarioUpdateRequest`/`AlterarSenhaRequest` separam cadastro, alteração cadastral e troca de senha |
 | Desativar em vez de excluir (auditoria) | ✅ não há `DELETE /usuarios/{id}`; `PUT /usuarios/{id}` com `ativo=false` desativa (bloqueia logins futuros; tokens já emitidos continuam válidos até expirar, mesma ressalva da aula) |
-| Testes demonstrando `200`/`401`/`403` | ✅ `UsuarioControllerTest`, `CorretoraFluxoIntegrationTest`/`AcaoFluxoIntegrationTest` (cadastro sem token → `401`; com `USER` → `403`; com `ADMIN` → `201`) |
+| Testes demonstrando `200`/`401`/`403` | ✅ `UsuarioFluxoIntegrationTest` (equivalente ao `UsuarioResourceIntegrationTest` da aula: hash BCrypt gravado, respostas sem senha/hash, alteração de papel/situação persistida, troca de senha com a antiga deixando de autenticar, `@WithMockUser` e JWT real), `UsuarioControllerTest`, `CorretoraFluxoIntegrationTest`/`AcaoFluxoIntegrationTest` (cadastro sem token → `401`; com `USER` → `403`; com `ADMIN` → `201`) |
+| Último administrador ativo não pode ser rebaixado/desativado (seção 12.1) | ✅ `UsuarioService` responde `422` (`UltimoAdministradorException`) — implementado em TDD |
 
 **Aula 15 — Testes, TDD e cobertura (JaCoCo)**
 
 | Prática ensinada | Aplicada? |
 |---|---|
 | `jacoco-maven-plugin` com `prepare-agent`/`report`/`check` no `pom.xml` | ✅ |
-| Portão de cobertura no mínimo medido (não na meta acadêmica) | ✅ `jacoco.minimum.line.coverage=0.85`, `jacoco.minimum.branch.coverage=0.70` — medição real nesta etapa: **96,35% linhas, 77,54% ramos** (818/849 linhas, 107/138 ramos), com margem abaixo do medido para não falhar por flutuação mínima entre execuções |
+| Portão de cobertura elevado só quando a suíte sustenta | ✅ `jacoco.minimum.line.coverage=0.85`, `jacoco.minimum.branch.coverage=0.80` (meta acadêmica). Linha de base: 96,35% linhas / 77,54% ramos com portão de ramos em `0.70`; medição atual: **96,52% linhas (831/861), 84,87% ramos (129/152)** |
 | `./mvnw clean verify` gera relatório e aplica o portão | ✅ relatórios em `target/site/jacoco/index.html` (HTML), `jacoco.xml`, `jacoco.csv` |
-| Build falha se a cobertura cair abaixo do portão | ✅ verificado manualmente subindo o mínimo de ramos para `0.80` via `-Djacoco.minimum.branch.coverage=0.80` (falha, como esperado, pois o real é 77,54%) e confirmando que `./mvnw clean verify` sem overrides volta a passar |
+| Build falha se a cobertura cair abaixo do portão | ✅ verificado com `-Djacoco.minimum.branch.coverage=0.90` (222 testes passam, build falha no `check`, pois o real é 84,87%) e confirmando que `./mvnw clean verify` sem overrides volta a passar |
 | Testes novos cobrindo as áreas antes sem cobertura (Aulas 13/14) | ✅ `UsuarioServiceTest`, `UsuarioControllerTest`, `AdminInitializerTest`, `JwtDecoderValidationTest` (token adulterado/expirado/emissor errado), `JwtPrincipalConverterTest` |
-| Suíte cresceu sem reduzir o enunciado de nenhum teste existente | ✅ 170 testes (eram 140), 0 falhas |
+| Ciclos TDD Red → Green → Refactor com evidência da falha | ✅ 3 ciclos em `UsuarioService`/DTOs (nome não era gravado na atualização — defeito real; último administrador; senha 8–72) — saídas em [`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md) |
+| Testes parametrizados e valores de fronteira | ✅ `SenhaValidacaoTest` (7/8/72/73 caracteres), `JwtPropertiesTest` (segredo 31/32 bytes, expiração 0/1, emissor nulo/vazio/em branco), `CorrelationIdFilterTest` |
+| Teste que detecta alteração proposital (mutação) | ✅ dois mutantes manuais (`<= 1`→`< 1` e `< 32`→`< 31`), ambos mortos — ver documento de evidências |
+| Integração contínua | ✅ `.github/workflows/testes.yml` roda `./mvnw --batch-mode clean verify` e publica o relatório JaCoCo |
+| Suíte cresceu sem reduzir o enunciado de nenhum teste existente | ✅ 222 testes (eram 170 antes desta etapa, 140 antes das aulas), 0 falhas, nenhuma exclusão no JaCoCo |
 
-**Meta acadêmica declarada**: 80% linhas / 80% ramos. Linhas já superam a meta (96,35%); ramos estão em 77,54%, abaixo da meta mas acima do portão configurado — a progressão recomendada pela aula (`55% → 60% → 70% → 80%`) aqui seria `70% → 77,54% → 80%`, elevando o portão conforme novos testes de borda forem adicionados (ex.: cenários de erro ainda não exercitados nos adaptadores de integração).
+**Meta acadêmica declarada**: 80% linhas / 80% ramos — **atingida** (96,52% / 84,87%). Progressão do portão de ramos: `0.70` → `0.80`, elevado só depois de a nova suíte sustentá-lo. Justificativas, explicação `401` × `403`, regra horizontal, posição de cada `@PreAuthorize`, uso de dublês e evidências de TDD/mutação estão em [`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md).
+
+## Complemento de testes das Aulas 13, 14 e 15 (revisão contra o material)
+
+Esta seção registra a segunda etapa de trabalho sobre as Aulas 13, 14 e 15. A primeira etapa
+(commit `ef6d0ed`) implementou login JWT, RBAC e o portão JaCoCo. Depois disso, a suíte de testes
+foi comparada item por item com os arquivos das aulas no repositório
+[`jeffersonarpasserini/suporteos2025`](https://github.com/jeffersonarpasserini/suporteos2025/tree/main/docs/aulas).
+A comparação mostrou que os testes **cobriam quase tudo, mas não exatamente como o material pede**.
+Esta etapa fechou todas as diferenças.
+
+### 1. O que a revisão encontrou
+
+| Aula | O que o material pede | Situação antes | Situação agora |
+|---|---|---|---|
+| 13 | `AuthResourceIntegrationTest`: fluxo real de login, senha errada, sem token, com token, papel sem permissão, `/auth/me` | Senha errada e `/auth/me` só testados no controller, com o serviço simulado | `AuthFluxoIntegrationTest` com contexto completo, sem mocks |
+| 13 | Experimentos da seção 12.4: token adulterado e token expirado → `401` | Testados só direto no decodificador (`JwtDecoderValidationTest`), não por HTTP | Testados por requisição HTTP real |
+| 13 | Testes de integração usando `@WithMockUser` | O projeto não usava a anotação em nenhum teste (e ela nem funcionava, ver seção 3) | Usada nos testes de autorização de `/usuarios` |
+| 14 | `UsuarioResourceIntegrationTest` com banco, segurança e serviço reais | Só `UsuarioControllerTest`, com o serviço simulado | `UsuarioFluxoIntegrationTest` |
+| 14 | Hash BCrypt gravado, senha antiga deixa de funcionar após a troca | Não verificado no banco nem de ponta a ponta | Verificado |
+| 15 | Meta de 80% de ramos | 77,54% (portão em 70%) | 84,87% (portão em 80%) |
+| 15 | `@ParameterizedTest` e valores de fronteira (7, 8, 72, 73) | Nenhum | `SenhaValidacaoTest`, `JwtPropertiesTest`, `CorrelationIdFilterTest` |
+| 15 | Pelo menos 3 ciclos TDD com evidência de teste falhando antes | Testes escritos depois do código, sem evidência | 3 ciclos com a saída real da falha registrada |
+| 15 | Teste que detecta uma alteração proposital (mutação) | Nenhum | 2 mutantes manuais, os dois detectados |
+| 15 | Integração contínua (evolução sugerida) | Não existia | `.github/workflows/testes.yml` |
+
+### 2. Testes novos
+
+**`AuthFluxoIntegrationTest` (Aula 13).** Sobe o contexto Spring completo (H2, Liquibase, cadeia de
+segurança real) e faz login de verdade antes de cada cenário.
+
+| Teste | O que verifica | Resultado esperado |
+|---|---|---|
+| `loginComCredenciaisValidasEmiteJwtAssinado` | Login emite um JWT no formato `header.payload.assinatura` | `200` |
+| `loginComSenhaIncorretaRetorna401` | Senha errada é recusada | `401` |
+| `recursoProtegidoSemTokenRetorna401` | `/carteira/posicoes` e `/auth/me` sem cabeçalho | `401` |
+| `recursoProtegidoComTokenEmitidoRetorna200` | O token emitido dá acesso a recurso protegido | `200` |
+| `tokenAdulteradoRetorna401` | Um caractere da assinatura trocado | `401` |
+| `tokenExpiradoRetorna401` | Token assinado com o segredo correto, mas com `exp` no passado | `401` |
+| `escritaComPapelUserRetorna403` | `USER` tentando cadastrar corretora | `403` |
+| `meDevolveOUsuarioDoTokenSemExporSenha` | `/auth/me` devolve id, e-mail e papel do token, sem senha nem hash | `200` |
+
+O teste de token expirado não espera o relógio: assina um token com `exp` uma hora no passado
+usando o próprio `JwtEncoder` da aplicação. Isso prova que a assinatura válida não basta, porque a
+validade temporal também é conferida. Equivale ao experimento `JWT_EXPIRATION=10s` da aula.
+
+**`UsuarioFluxoIntegrationTest` (Aula 14).** Contexto completo; o administrador é criado no banco e
+faz login real antes de cada teste.
+
+| Teste | O que verifica |
+|---|---|
+| `administradorCriaUsuarioComHashBcryptSemExporSenhaNaResposta` | `201`; resposta sem `senha`/`senhaHash`; no banco, o hash começa com `$2`, é diferente do texto e `matches()` confere |
+| `listagemAdministrativaNaoExpoeSenhaNemHash` | A listagem traz os usuários e não contém `senha` nem nenhum hash `$2...` |
+| `alteracaoDePapelESituacaoEhPersistidaEDesativadoNaoAutentica` | Nome, papel e ativo gravados no banco; usuário desativado recebe `401` no login |
+| `trocaDeSenhaInvalidaASenhaAntigaEAceitaANova` | Após `PUT /usuarios/{id}/senha`: senha antiga → `401`, nova → `200` |
+| `naoPermiteRebaixarOUltimoAdministradorAtivo` | Rebaixar o único `ADMIN` responde `422` e o papel continua `ADMIN` no banco |
+| `usuarioComumComTokenRealNaoGerenciaUsuarios` | `USER` com JWT real em `/usuarios` → `403` |
+| `semTokenRetorna401` | `/usuarios` sem token → `401` |
+| `userNaoDeveGerenciarUsuarios` | Exemplo literal da aula, com `@WithMockUser(roles = "USER")` → `403` |
+| `adminSimuladoListaUsuarios` | `@WithMockUser(roles = "ADMIN")` → `200` |
+
+**Testes unitários novos (Aula 15).**
+
+| Classe de teste | O que cobre |
+|---|---|
+| `SenhaValidacaoTest` | `@ParameterizedTest` com senha de 7, 8, 72 e 73 caracteres nos três contratos que recebem senha (`UsuarioCreateRequest`, `RegistrarUsuarioRequest`, `AlterarSenhaRequest`) |
+| `JwtPropertiesTest` | Segredo com 31 bytes (recusado) e 32 bytes (aceito), segredo nulo, segredo medido em bytes UTF-8 (16 caracteres acentuados = 32 bytes), expiração 0 e -1 (recusadas) e 1 (aceita), emissor nulo, vazio e em branco |
+| `CorrelationIdFilterTest` | Cabeçalho `X-Correlation-Id` recebido é reaproveitado e fica no MDC durante a requisição; ausente ou em branco gera um UUID; o MDC é limpo no fim |
+| `GlobalExceptionHandlerTest` | Exceção inesperada vira `500` com mensagem genérica, sem vazar o texto interno; exceções do Spring com status próprio (ex.: `405`) não são mascaradas como `500` |
+| `UsuarioServiceTest` (6 testes novos) | Atualização grava o nome; regra do último administrador (rebaixar, desativar, permitido quando há outro admin, sem consulta desnecessária ao banco) |
+
+### 3. Problemas encontrados e corrigidos
+
+1. **Nome do usuário era descartado na atualização (bug real).** `UsuarioUpdateRequest` recebia
+   `nome`, mas `UsuarioService.atualizar` nunca o gravava, e a entidade `Usuario` nem tinha
+   `setNome`. O teste antigo não percebia porque não verificava o nome. Corrigido pelo ciclo TDD 1.
+2. **`@WithMockUser` não funcionava no projeto.** No Spring Boot 4, quem liga o Spring Security ao
+   MockMvc auto-configurado é o `spring-boot-starter-security-test`. O `pom.xml` declarava só a
+   biblioteca `spring-security-test`, então qualquer requisição "autenticada" pela anotação
+   chegava sem usuário e virava `401`. A dependência foi trocada pelo starter.
+3. **Senha acima de 72 caracteres causava erro `500`.** O BCrypt só considera os primeiros 72 bytes
+   e o Spring Security atual lança exceção para senhas maiores. Agora a validação é `@Size(min = 8,
+   max = 72)` nos três DTOs, e o formulário de cadastro do frontend (`registro.ts`) ganhou
+   `Validators.maxLength(72)`, com a mensagem "Entre 8 e 72 caracteres".
+4. **Comportamento observado, sem alteração de código:** o Spring valida o corpo (`@Valid`)
+   **antes** de avaliar o `@PreAuthorize`, que só atua quando o método do controller é chamado.
+   Um `USER` que envia um corpo inválido recebe `400`, não `403`. Os testes de `403` usam um corpo
+   válido para isolar a regra de papel.
+
+### 4. Regra nova: o último administrador ativo é protegido
+
+A Aula 14 (seção 12.1) aponta que sistemas reais impedem que o último administrador seja
+desativado ou rebaixado. Isso foi implementado em `UsuarioService.validarQueNaoRemoveOUltimoAdministrador`:
+
+- se o usuário **era** `ADMIN` ativo e a alteração o deixa **não** `ADMIN` ou inativo, o serviço
+  conta os administradores ativos (`UsuarioRepository.countByPapelAndAtivoTrue`);
+- se houver **1 ou menos**, a alteração é recusada com `UltimoAdministradorException` → **`422`**;
+- a contagem só é consultada quando a alteração realmente tira alguém da condição de admin ativo.
+
+### 5. Ciclos TDD (Red → Green → Refactor)
+
+Os três ciclos foram feitos com o teste escrito **antes** da implementação. Saída real do Maven:
+
+**Ciclo 1. Atualização grava o nome.**
+
+```text
+RED    ./mvnw test -Dtest=UsuarioServiceTest
+[ERROR] UsuarioServiceTest.atualizarAlteraONome <<< FAILURE!
+expected: "Ana Souza"
+ but was: "Nome"
+[ERROR] Tests run: 9, Failures: 1, Errors: 0, Skipped: 0
+
+GREEN  Usuario.setNome + usuario.setNome(request.nome().trim())
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0
+```
+
+**Ciclo 2. Último administrador ativo.** Antes do teste foram criados só a exceção e a consulta do
+repositório, sem a regra, para o teste compilar e falhar pelo motivo certo.
+
+```text
+RED
+[ERROR] UsuarioServiceTest.desativarOUltimoAdministradorAtivoLancaExcecao <<< FAILURE!
+Expecting code to raise a throwable.
+[ERROR] UsuarioServiceTest.rebaixarOUltimoAdministradorAtivoLancaExcecao <<< FAILURE!
+Expecting code to raise a throwable.
+[ERROR] Tests run: 14, Failures: 2, Errors: 1, Skipped: 0
+
+GREEN  UsuarioService.validarQueNaoRemoveOUltimoAdministrador
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0
+```
+
+O erro restante na fase vermelha era o Mockito avisando que a contagem simulada nunca era
+consultada, o que também era esperado, porque a regra ainda não existia. No refactor, a condição
+virou um método com nome de regra de negócio e duas variáveis explicativas
+(`eraAdministradorAtivo`, `continuaAdministradorAtivo`).
+
+**Ciclo 3. Fronteiras da senha.**
+
+```text
+RED    ./mvnw test -Dtest=SenhaValidacaoTest
+[ERROR] SenhaValidacaoTest.cadastroPeloAdministradorRespeitaLimitesDaSenha(int, boolean)[4] <<< FAILURE!
+[ERROR] SenhaValidacaoTest.autocadastroRespeitaLimitesDaSenha(int, boolean)[4] <<< FAILURE!
+[ERROR] SenhaValidacaoTest.trocaDeSenhaRespeitaLimitesDaSenha(int, boolean)[4] <<< FAILURE!
+[ERROR] Tests run: 12, Failures: 3, Errors: 0, Skipped: 0
+
+GREEN  @Size(min = 8, max = 72) nos três DTOs
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0
+```
+
+Só o caso `[4]` (73 caracteres) falhou; 7, 8 e 72 já se comportavam como esperado.
+
+### 6. Evolução da cobertura e do portão JaCoCo
+
+| Etapa | Testes | Linhas | Ramos |
+|---|---:|---:|---:|
+| Linha de base (commit `ef6d0ed`) | 170 | 96,35% (818/849) | 77,54% (107/138) |
+| + ciclos TDD + testes de integração das Aulas 13/14 | 205 | — | 80,26% (122/152) |
+| + `JwtPropertiesTest`, `CorrelationIdFilterTest`, `GlobalExceptionHandlerTest` | **222** | **96,52% (831/861)** | **84,87% (129/152)** |
+
+- Portão de ramos: **`0.70` → `0.80`** (meta acadêmica), elevado só depois de a suíte sustentar
+  84,87%, deixando margem para flutuação. Portão de linhas mantido em `0.85`.
+- Os testes extras seguiram a ordem de risco da aula (seção 16): primeiro autenticação
+  (`JwtProperties`), depois rastreamento de requisições e tratamento de erros.
+- Nenhum limite foi reduzido, nenhuma exclusão foi adicionada ao JaCoCo e nenhum teste foi
+  removido ou desativado.
+
+Demonstração do portão (seção 14 da aula):
+
+```text
+./mvnw verify -Djacoco.minimum.branch.coverage=0.90
+[INFO] Tests run: 222, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD FAILURE
+[ERROR] ... jacoco-maven-plugin:0.8.12:check ... Coverage checks have not been met.
+
+./mvnw clean verify
+[INFO] Tests run: 222, Failures: 0, Errors: 0, Skipped: 0
+[INFO] All coverage checks have been met.
+[INFO] BUILD SUCCESS
+```
+
+Os testes passam e mesmo assim o build falha: testes aprovados não significam política de
+qualidade aprovada.
+
+### 7. Teste de mutação (alteração proposital)
+
+Dois mutantes aplicados à mão, executados e depois revertidos:
+
+| Mutante | Alteração | Teste que detectou | Resultado |
+|---|---|---|---|
+| 1 | `UsuarioService`: `countByPapelAndAtivoTrue(ADMIN) <= 1` → `< 1` | `rebaixarOUltimoAdministradorAtivoLancaExcecao`, `desativarOUltimoAdministradorAtivoLancaExcecao` | 2 falhas, mutante morto |
+| 2 | `JwtProperties`: `length < 32` → `length < 31` (aceitaria chave HS256 de 248 bits) | `segredoCom31BytesEhRecusado` | 1 falha, mutante morto |
+
+Sem os testes de fronteira (1 contra 2 administradores, 31 contra 32 bytes), os dois mutantes
+sobreviveriam: a cobertura de linhas seria a mesma, mas a regra não estaria verificada.
+
+### 8. Uso de dublês (mocks)
+
+| Teste | Dublê | Por quê |
+|---|---|---|
+| `UsuarioServiceTest` | `UsuarioRepository` simulado (`@Mock`) | Isola a regra do banco. `verify(..., never()).save(...)` comprova que nada é gravado quando a regra recusa |
+| `UsuarioServiceTest` | `PasswordEncoder` **real** | O que importa é "o hash confere com a senha" (`matches`); um mock só provaria que `encode` foi chamado |
+| `CorrelationIdFilterTest`, `GlobalExceptionHandlerTest` | `MockHttpServletRequest`/`Response`/`MockFilterChain` | Fakes leves do spring-test, reais o bastante para observar cabeçalho e MDC sem subir servidor |
+| `SenhaValidacaoTest`, `JwtPropertiesTest` | nenhum | Regras puras |
+| `AuthFluxoIntegrationTest`, `UsuarioFluxoIntegrationTest` | nenhum (exceto `@WithMockUser` em 2 testes) | Integração com banco, filtros, serialização e JWT reais, como a aula recomenda |
+
+DTOs e a própria classe testada nunca são mockados.
+
+### 9. Integração contínua
+
+`.github/workflows/testes.yml` roda a cada `push` e `pull_request`:
+
+1. instala o Java 17 (Temurin) com cache do Maven;
+2. executa `chmod +x mvnw` (o `mvnw` está versionado sem permissão de execução, porque o
+   repositório foi criado no Windows);
+3. executa `./mvnw --batch-mode clean verify`, o mesmo comando usado localmente, com testes e portão
+   JaCoCo;
+4. publica `target/site/jacoco/` como artefato `relatorio-jacoco`, mesmo se o build falhar.
+
+### 10. Postman
+
+A pasta **Autenticação** da coleção ganhou **"Token adulterado (-> 401)"**. Um script de pré-requisição
+pega o token do último login, troca um caractere da assinatura e chama `/auth/me`. Com isso, os
+experimentos 1 a 5 da seção 12.4 da Aula 13 podem ser repetidos manualmente. O experimento 6 (token
+expirado) depende de esperar a expiração, então fica coberto pelo teste automatizado.
+
+### 11. Arquivos alterados nesta etapa
+
+| Arquivo | Mudança |
+|---|---|
+| `pom.xml` | `spring-security-test` trocado por `spring-boot-starter-security-test`; portão de ramos `0.70` → `0.80` |
+| `model/Usuario.java` | `setNome` |
+| `service/UsuarioService.java` | grava o nome na atualização; regra do último administrador |
+| `repository/UsuarioRepository.java` | `countByPapelAndAtivoTrue(Papel)` |
+| `exception/UltimoAdministradorException.java` | nova (`422`) |
+| `dto/UsuarioCreateRequest.java`, `RegistrarUsuarioRequest.java`, `AlterarSenhaRequest.java` | senha entre 8 e 72 caracteres |
+| `frontend/.../registro/registro.ts` e `registro.html` | `maxLength(72)` e nova mensagem de erro |
+| `src/test/.../integration/AuthFluxoIntegrationTest.java` | novo |
+| `src/test/.../integration/UsuarioFluxoIntegrationTest.java` | novo |
+| `src/test/.../dto/SenhaValidacaoTest.java` | novo |
+| `src/test/.../security/JwtPropertiesTest.java` | novo |
+| `src/test/.../config/CorrelationIdFilterTest.java` | novo |
+| `src/test/.../exception/GlobalExceptionHandlerTest.java` | novo |
+| `src/test/.../service/UsuarioServiceTest.java` | 6 testes novos |
+| `.github/workflows/testes.yml` | novo |
+| `postman/gestao-acoes.postman_collection.json` | requisição de token adulterado |
+| `docs/evidencias-aulas-13-14-15.md` | textos pedidos nas atividades avaliativas |
+
+### 12. Como reproduzir
+
+```bash
+# suíte completa + relatório + portão de cobertura
+./mvnw clean verify
+
+# relatório HTML
+# target/site/jacoco/index.html
+
+# só os testes desta etapa
+./mvnw test -Dtest='AuthFluxoIntegrationTest,UsuarioFluxoIntegrationTest,SenhaValidacaoTest,JwtPropertiesTest,CorrelationIdFilterTest,GlobalExceptionHandlerTest,UsuarioServiceTest'
+
+# demonstração do portão falhando
+./mvnw verify -Djacoco.minimum.branch.coverage=0.90
+```
+
+Os textos escritos que as atividades avaliativas pedem estão em
+[`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md): por que o JWT não deve
+conter dados sigilosos, a diferença entre `401` e `403`, a regra de autorização horizontal (cada
+usuário só acessa a própria carteira) e onde ficou cada `@PreAuthorize` e por quê.
 
 ## Pré-requisitos
 
@@ -320,7 +591,7 @@ Nesse caso, no IntelliJ use `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:$
 ./mvnw test
 ```
 
-A suíte completa (170 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor. As fatias `@WebMvcTest` de `/carteira`, `/proventos`, `/usuarios` e de `/auth` (só o teste de `/auth/me`) carregam a `SecurityFilterChain` real (`SecurityConfig` + `JwtPrincipalConverter`) para exercitar `401`/`403` de verdade; as demais (`/corretoras`, `/acoes`) desligam os filtros de servlet (`addFilters = false`) por testarem só a lógica do controller — a autorização desses dois endpoints é coberta pelos testes de integração ponta a ponta (`CorretoraFluxoIntegrationTest`/`AcaoFluxoIntegrationTest`), com contexto completo.
+A suíte completa (222 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor. As fatias `@WebMvcTest` de `/carteira`, `/proventos`, `/usuarios` e de `/auth` (só o teste de `/auth/me`) carregam a `SecurityFilterChain` real (`SecurityConfig` + `JwtPrincipalConverter`) para exercitar `401`/`403` de verdade; as demais (`/corretoras`, `/acoes`) desligam os filtros de servlet (`addFilters = false`) por testarem só a lógica do controller — a autorização desses dois endpoints é coberta pelos testes de integração ponta a ponta (`CorretoraFluxoIntegrationTest`/`AcaoFluxoIntegrationTest`), com contexto completo.
 
 ```bash
 ./mvnw clean verify
