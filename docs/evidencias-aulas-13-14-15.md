@@ -239,9 +239,10 @@ GREEN  (@Size(min = 8, max = 72) nos três DTOs; formulário de cadastro do fron
 |---|---:|---:|
 | Inicial | 170 | 77,54% (107/138) |
 | + ciclos TDD + integração das Aulas 13/14 | 205 | 80,26% (122/152) |
-| + `JwtPropertiesTest`, `CorrelationIdFilterTest`, `GlobalExceptionHandlerTest` | **222** | **84,87% (129/152)** |
+| + `JwtPropertiesTest`, `CorrelationIdFilterTest`, `GlobalExceptionHandlerTest` | 222 | 84,87% (129/152) |
+| + `CnpjUtilsTest`/`CepUtilsTest` (entrada nula, 1º dígito verificador errado, dígito verificador igual a 0) | **226** | **87,50% (133/152)** |
 
-Linhas finais: **96,52% (831/861)**. Nenhum limite foi reduzido, nenhuma exclusão foi adicionada
+Linhas finais: **96,86% (834/861)**. Nenhum limite foi reduzido, nenhuma exclusão foi adicionada
 ao JaCoCo e nenhum teste foi removido ou desativado.
 
 Os testes extras seguiram a ordem de risco da seção 16, começando por autenticação:
@@ -251,18 +252,20 @@ reaproveitado, e o MDC limpo ao fim) e `GlobalExceptionHandler` (uma exceção i
 mensagem interna; exceções do Spring com status próprio não viram `500`).
 
 O portão de ramos subiu de `0.70` para **`0.80`** (a meta acadêmica) **depois** de a suíte
-sustentar 84,87%, deixando margem para flutuação. O de linhas continua em `0.85`.
+sustentar 84,87%. Depois subiu de `0.80` para **`0.85`**, só depois de os 4 testes de
+`CnpjUtils`/`CepUtils` levarem a suíte a 87,50%, deixando margem para flutuação. O de linhas
+continua em `0.85`.
 
 ### 5. Demonstração do portão (seção 14)
 
 ```text
 ./mvnw verify -Djacoco.minimum.branch.coverage=0.90
-[INFO] Tests run: 222, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 226, Failures: 0, Errors: 0, Skipped: 0
 [INFO] BUILD FAILURE
 [ERROR] ... jacoco-maven-plugin:0.8.12:check (check-coverage) ... Coverage checks have not been met.
 
 ./mvnw clean verify
-[INFO] Tests run: 222, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 226, Failures: 0, Errors: 0, Skipped: 0
 [INFO] All coverage checks have been met.
 [INFO] BUILD SUCCESS
 ```

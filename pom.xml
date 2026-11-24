@@ -34,7 +34,7 @@
              docs/evidencias-aulas-13-14-15.md. Nunca reduzir estes valores para o build passar. -->
         <jacoco.version>0.8.12</jacoco.version>
         <jacoco.minimum.line.coverage>0.85</jacoco.minimum.line.coverage>
-        <jacoco.minimum.branch.coverage>0.80</jacoco.minimum.branch.coverage>
+        <jacoco.minimum.branch.coverage>0.85</jacoco.minimum.branch.coverage>
     </properties>
     <dependencies>
         <dependency>

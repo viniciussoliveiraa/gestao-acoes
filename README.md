@@ -46,7 +46,7 @@ Um frontend Angular consome esta API — ver [`frontend/README.md`](frontend/REA
 | Diferencial | Status |
 |---|---|
 | Feign Client ou WebClient | ✅ Feign Client (`@FeignClient` em todos os adapters de integração) |
-| Testes unitários e/ou de integração | ✅ 222 testes (`@DataJpaTest`, `@WebMvcTest`, integração ponta a ponta, `MockWebServer`), com portão de cobertura JaCoCo (`./mvnw clean verify`) |
+| Testes unitários e/ou de integração | ✅ 226 testes (`@DataJpaTest`, `@WebMvcTest`, integração ponta a ponta, `MockWebServer`), com portão de cobertura JaCoCo (`./mvnw clean verify`) |
 | Paginação nas listagens | ✅ `Pageable`/`Page` em corretoras, ações, lançamentos e proventos |
 | Logs estruturados | ✅ `CorrelationIdFilter` + padrão de log com `correlationId` |
 | Cache para consultas externas | ❌ Não implementado |
@@ -151,17 +151,17 @@ Matriz de acesso aplicada ao domínio do gestao-acoes (diferente do `suporteos20
 | Prática ensinada | Aplicada? |
 |---|---|
 | `jacoco-maven-plugin` com `prepare-agent`/`report`/`check` no `pom.xml` | ✅ |
-| Portão de cobertura elevado só quando a suíte sustenta | ✅ `jacoco.minimum.line.coverage=0.85`, `jacoco.minimum.branch.coverage=0.80` (meta acadêmica). Linha de base: 96,35% linhas / 77,54% ramos com portão de ramos em `0.70`; medição atual: **96,52% linhas (831/861), 84,87% ramos (129/152)** |
+| Portão de cobertura elevado só quando a suíte sustenta | ✅ `jacoco.minimum.line.coverage=0.85`, `jacoco.minimum.branch.coverage=0.85` (acima da meta acadêmica de 80%). Linha de base: 96,35% linhas / 77,54% ramos com portão de ramos em `0.70`; medição atual: **96,86% linhas (834/861), 87,50% ramos (133/152)** |
 | `./mvnw clean verify` gera relatório e aplica o portão | ✅ relatórios em `target/site/jacoco/index.html` (HTML), `jacoco.xml`, `jacoco.csv` |
-| Build falha se a cobertura cair abaixo do portão | ✅ verificado com `-Djacoco.minimum.branch.coverage=0.90` (222 testes passam, build falha no `check`, pois o real é 84,87%) e confirmando que `./mvnw clean verify` sem overrides volta a passar |
+| Build falha se a cobertura cair abaixo do portão | ✅ verificado com `-Djacoco.minimum.branch.coverage=0.90` (226 testes passam, build falha no `check`, pois o real é 87,50%) e confirmando que `./mvnw clean verify` sem overrides volta a passar |
 | Testes novos cobrindo as áreas antes sem cobertura (Aulas 13/14) | ✅ `UsuarioServiceTest`, `UsuarioControllerTest`, `AdminInitializerTest`, `JwtDecoderValidationTest` (token adulterado/expirado/emissor errado), `JwtPrincipalConverterTest` |
 | Ciclos TDD Red → Green → Refactor com evidência da falha | ✅ 3 ciclos em `UsuarioService`/DTOs (nome não era gravado na atualização — defeito real; último administrador; senha 8–72) — saídas em [`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md) |
 | Testes parametrizados e valores de fronteira | ✅ `SenhaValidacaoTest` (7/8/72/73 caracteres), `JwtPropertiesTest` (segredo 31/32 bytes, expiração 0/1, emissor nulo/vazio/em branco), `CorrelationIdFilterTest` |
 | Teste que detecta alteração proposital (mutação) | ✅ dois mutantes manuais (`<= 1`→`< 1` e `< 32`→`< 31`), ambos mortos — ver documento de evidências |
 | Integração contínua | ✅ `.github/workflows/testes.yml` roda `./mvnw --batch-mode clean verify` e publica o relatório JaCoCo |
-| Suíte cresceu sem reduzir o enunciado de nenhum teste existente | ✅ 222 testes (eram 170 antes desta etapa, 140 antes das aulas), 0 falhas, nenhuma exclusão no JaCoCo |
+| Suíte cresceu sem reduzir o enunciado de nenhum teste existente | ✅ 226 testes (eram 170 antes desta etapa, 140 antes das aulas), 0 falhas, nenhuma exclusão no JaCoCo |
 
-**Meta acadêmica declarada**: 80% linhas / 80% ramos — **atingida** (96,52% / 84,87%). Progressão do portão de ramos: `0.70` → `0.80`, elevado só depois de a nova suíte sustentá-lo. Justificativas, explicação `401` × `403`, regra horizontal, posição de cada `@PreAuthorize`, uso de dublês e evidências de TDD/mutação estão em [`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md).
+**Meta acadêmica declarada**: 80% linhas / 80% ramos — **atingida** (96,86% / 87,50%). Progressão do portão de ramos: `0.70` → `0.80` → `0.85`, cada passo elevado só depois de a nova suíte sustentá-lo. Justificativas, explicação `401` × `403`, regra horizontal, posição de cada `@PreAuthorize`, uso de dublês e evidências de TDD/mutação estão em [`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md).
 
 ## Todos os testes feitos nas Aulas 13, 14 e 15
 
@@ -170,7 +170,8 @@ aula a que pertencem, com o que cada um verifica. São **74 métodos de teste** 
 geram **87 execuções**, porque os testes parametrizados rodam uma vez para cada valor. Dessas, 82
 são testes novos; as outras 5 são testes antigos reescritos para a API nativa do Spring Security. A
 suíte foi de 140 para **222 testes**, todos passando, com **96,52% de cobertura de linhas e 84,87%
-de ramos**.
+de ramos**. Depois, 4 testes de `CnpjUtils`/`CepUtils` levaram a suíte a **226 testes**, com
+**96,86% de linhas e 87,50% de ramos** (ver a seção "Evolução da cobertura e do portão JaCoCo").
 
 Legenda: 🆕 classe nova · ✏️ classe que já existia e ganhou testes ou foi reescrita.
 
@@ -312,7 +313,7 @@ Também fazem parte da Aula 15, mas não são classes de teste:
 
 - **3 ciclos TDD** (Red → Green → Refactor), com a saída real da falha: nome na atualização, último administrador e fronteiras da senha. Ver seção 5 abaixo.
 - **2 testes de mutação manuais** (`<= 1` → `< 1` e `< 32` → `< 31`), os dois detectados pelos testes. Ver seção 7.
-- **Portão JaCoCo** de 85% de linhas e 80% de ramos no `./mvnw clean verify`. O build falha se a cobertura cair.
+- **Portão JaCoCo** de 85% de linhas e 85% de ramos no `./mvnw clean verify`. O build falha se a cobertura cair.
 - **Integração contínua**: `.github/workflows/testes.yml` roda a suíte e o portão a cada push.
 
 ### Como rodar só os testes de cada aula
@@ -351,7 +352,7 @@ Esta etapa fechou todas as diferenças.
 | 13 | Testes de integração usando `@WithMockUser` | O projeto não usava a anotação em nenhum teste (e ela nem funcionava, ver seção 3) | Usada nos testes de autorização de `/usuarios` |
 | 14 | `UsuarioResourceIntegrationTest` com banco, segurança e serviço reais | Só `UsuarioControllerTest`, com o serviço simulado | `UsuarioFluxoIntegrationTest` |
 | 14 | Hash BCrypt gravado, senha antiga deixa de funcionar após a troca | Não verificado no banco nem de ponta a ponta | Verificado |
-| 15 | Meta de 80% de ramos | 77,54% (portão em 70%) | 84,87% (portão em 80%) |
+| 15 | Meta de 80% de ramos | 77,54% (portão em 70%) | 87,50% (portão em 85%) |
 | 15 | `@ParameterizedTest` e valores de fronteira (7, 8, 72, 73) | Nenhum | `SenhaValidacaoTest`, `JwtPropertiesTest`, `CorrelationIdFilterTest` |
 | 15 | Pelo menos 3 ciclos TDD com evidência de teste falhando antes | Testes escritos depois do código, sem evidência | 3 ciclos com a saída real da falha registrada |
 | 15 | Teste que detecta uma alteração proposital (mutação) | Nenhum | 2 mutantes manuais, os dois detectados |
@@ -488,10 +489,15 @@ Só o caso `[4]` (73 caracteres) falhou; 7, 8 e 72 já se comportavam como esper
 |---|---:|---:|---:|
 | Linha de base (commit `ef6d0ed`) | 170 | 96,35% (818/849) | 77,54% (107/138) |
 | + ciclos TDD + testes de integração das Aulas 13/14 | 205 | — | 80,26% (122/152) |
-| + `JwtPropertiesTest`, `CorrelationIdFilterTest`, `GlobalExceptionHandlerTest` | **222** | **96,52% (831/861)** | **84,87% (129/152)** |
+| + `JwtPropertiesTest`, `CorrelationIdFilterTest`, `GlobalExceptionHandlerTest` | 222 | 96,52% (831/861) | 84,87% (129/152) |
+| + `CnpjUtilsTest`/`CepUtilsTest` (entrada nula, 1º dígito verificador errado, dígito verificador igual a 0) | **226** | **96,86% (834/861)** | **87,50% (133/152)** |
 
 - Portão de ramos: **`0.70` → `0.80`** (meta acadêmica), elevado só depois de a suíte sustentar
-  84,87%, deixando margem para flutuação. Portão de linhas mantido em `0.85`.
+  84,87%; depois **`0.80` → `0.85`**, só depois de a suíte sustentar 87,50%, deixando margem para
+  flutuação. Portão de linhas mantido em `0.85`.
+- Os 4 testes de `CnpjUtils`/`CepUtils` cobrem regras reais que não tinham teste: `normalizar(null)`
+  devolve texto vazio, CNPJ com o 1º dígito verificador errado é rejeitado e CNPJ cujo dígito
+  verificador é 0 (o da XP, `02332886000104`) é aceito.
 - Os testes extras seguiram a ordem de risco da aula (seção 16): primeiro autenticação
   (`JwtProperties`), depois rastreamento de requisições e tratamento de erros.
 - Nenhum limite foi reduzido, nenhuma exclusão foi adicionada ao JaCoCo e nenhum teste foi
@@ -501,12 +507,12 @@ Demonstração do portão (seção 14 da aula):
 
 ```text
 ./mvnw verify -Djacoco.minimum.branch.coverage=0.90
-[INFO] Tests run: 222, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 226, Failures: 0, Errors: 0, Skipped: 0
 [INFO] BUILD FAILURE
 [ERROR] ... jacoco-maven-plugin:0.8.12:check ... Coverage checks have not been met.
 
 ./mvnw clean verify
-[INFO] Tests run: 222, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 226, Failures: 0, Errors: 0, Skipped: 0
 [INFO] All coverage checks have been met.
 [INFO] BUILD SUCCESS
 ```
@@ -560,7 +566,7 @@ expirado) depende de esperar a expiração, então fica coberto pelo teste autom
 
 | Arquivo | Mudança |
 |---|---|
-| `pom.xml` | `spring-security-test` trocado por `spring-boot-starter-security-test`; portão de ramos `0.70` → `0.80` |
+| `pom.xml` | `spring-security-test` trocado por `spring-boot-starter-security-test`; portão de ramos `0.70` → `0.80` (depois `0.85`) |
 | `model/Usuario.java` | `setNome` |
 | `service/UsuarioService.java` | grava o nome na atualização; regra do último administrador |
 | `repository/UsuarioRepository.java` | `countByPapelAndAtivoTrue(Papel)` |
@@ -761,7 +767,7 @@ Nesse caso, no IntelliJ use `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:$
 ./mvnw test
 ```
 
-A suíte completa (222 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor. As fatias `@WebMvcTest` de `/carteira`, `/proventos`, `/usuarios` e de `/auth` (só o teste de `/auth/me`) carregam a `SecurityFilterChain` real (`SecurityConfig` + `JwtPrincipalConverter`) para exercitar `401`/`403` de verdade; as demais (`/corretoras`, `/acoes`) desligam os filtros de servlet (`addFilters = false`) por testarem só a lógica do controller — a autorização desses dois endpoints é coberta pelos testes de integração ponta a ponta (`CorretoraFluxoIntegrationTest`/`AcaoFluxoIntegrationTest`), com contexto completo.
+A suíte completa (226 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor. As fatias `@WebMvcTest` de `/carteira`, `/proventos`, `/usuarios` e de `/auth` (só o teste de `/auth/me`) carregam a `SecurityFilterChain` real (`SecurityConfig` + `JwtPrincipalConverter`) para exercitar `401`/`403` de verdade; as demais (`/corretoras`, `/acoes`) desligam os filtros de servlet (`addFilters = false`) por testarem só a lógica do controller — a autorização desses dois endpoints é coberta pelos testes de integração ponta a ponta (`CorretoraFluxoIntegrationTest`/`AcaoFluxoIntegrationTest`), com contexto completo.
 
 ```bash
 ./mvnw clean verify

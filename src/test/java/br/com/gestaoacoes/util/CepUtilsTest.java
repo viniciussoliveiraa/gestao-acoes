@@ -25,4 +25,9 @@ class CepUtilsTest {
     void isValidoRejeitaNulo() {
         assertThat(CepUtils.isValido(null)).isFalse();
     }
+
+    @Test
+    void normalizarNuloRetornaTextoVazio() {
+        assertThat(CepUtils.normalizar(null)).isEmpty();
+    }
 }

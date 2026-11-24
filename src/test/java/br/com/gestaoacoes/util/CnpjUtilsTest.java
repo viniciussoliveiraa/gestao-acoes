@@ -35,4 +35,21 @@ class CnpjUtilsTest {
     void isValidoRejeitaNulo() {
         assertThat(CnpjUtils.isValido(null)).isFalse();
     }
+
+    @Test
+    void normalizarNuloRetornaTextoVazio() {
+        assertThat(CnpjUtils.normalizar(null)).isEmpty();
+    }
+
+    @Test
+    void isValidoRejeitaPrimeiroDigitoVerificadorIncorreto() {
+        // correto e 11222333000181: aqui o 1o DV (8) foi trocado por 9
+        assertThat(CnpjUtils.isValido("11222333000191")).isFalse();
+    }
+
+    @Test
+    void isValidoAceitaCnpjCujoDigitoVerificadorEZero() {
+        // CNPJ real da XP Investimentos: o 1o DV e 0 (resto da divisao por 11 menor que 2)
+        assertThat(CnpjUtils.isValido("02332886000104")).isTrue();
+    }
 }
