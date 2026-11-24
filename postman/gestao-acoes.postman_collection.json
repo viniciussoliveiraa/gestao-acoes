@@ -135,7 +135,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cnpj\": \"11.222.333/0001-81\",\n  \"cep\": \"01310-100\",\n  \"numero\": \"1000\",\n  \"complemento\": \"Sala 1\"\n}"
+              "raw": "{\n  \"cnpj\": \"02332886000104\",\n  \"cep\": \"22250911\",\n  \"numero\": \"501\",\n  \"complemento\": \"Bloco I Sala 601\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/corretoras", "host": ["{{baseUrl}}"], "path": ["corretoras"] }
           }
@@ -162,7 +162,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cnpj\": \"11.222.333/0001-81\",\n  \"cep\": \"01310-100\",\n  \"numero\": \"1000\"\n}"
+              "raw": "{\n  \"cnpj\": \"02332886000104\",\n  \"cep\": \"22250911\",\n  \"numero\": \"501\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/corretoras", "host": ["{{baseUrl}}"], "path": ["corretoras"] }
           }
@@ -177,7 +177,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cnpj\": \"11.222.333/0001-81\",\n  \"cep\": \"01310-100\",\n  \"numero\": \"1000\"\n}"
+              "raw": "{\n  \"cnpj\": \"02332886000104\",\n  \"cep\": \"22250911\",\n  \"numero\": \"501\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/corretoras", "host": ["{{baseUrl}}"], "path": ["corretoras"] }
           }
@@ -209,9 +209,9 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/corretoras/cnpj/11222333000181",
+              "raw": "{{baseUrl}}/corretoras/cnpj/02332886000104",
               "host": ["{{baseUrl}}"],
-              "path": ["corretoras", "cnpj", "11222333000181"]
+              "path": ["corretoras", "cnpj", "02332886000104"]
             }
           }
         }
