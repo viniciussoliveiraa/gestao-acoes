@@ -163,6 +163,176 @@ Matriz de acesso aplicada ao domínio do gestao-acoes (diferente do `suporteos20
 
 **Meta acadêmica declarada**: 80% linhas / 80% ramos — **atingida** (96,52% / 84,87%). Progressão do portão de ramos: `0.70` → `0.80`, elevado só depois de a nova suíte sustentá-lo. Justificativas, explicação `401` × `403`, regra horizontal, posição de cada `@PreAuthorize`, uso de dublês e evidências de TDD/mutação estão em [`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md).
 
+## Todos os testes feitos nas Aulas 13, 14 e 15
+
+Esta seção lista **todos** os testes criados ou reescritos durante as três aulas, separados pela
+aula a que pertencem, com o que cada um verifica. São **74 métodos de teste** em 16 classes, que
+geram **87 execuções**, porque os testes parametrizados rodam uma vez para cada valor. Dessas, 82
+são testes novos; as outras 5 são testes antigos reescritos para a API nativa do Spring Security. A
+suíte foi de 140 para **222 testes**, todos passando, com **96,52% de cobertura de linhas e 84,87%
+de ramos**.
+
+Legenda: 🆕 classe nova · ✏️ classe que já existia e ganhou testes ou foi reescrita.
+
+### Aula 13: login com JWT (34 execuções)
+
+**🆕 `AuthFluxoIntegrationTest`**: integração com contexto Spring completo (banco H2, Liquibase e
+segurança real, sem mocks). Faz login de verdade antes de cada cenário.
+
+- `loginComCredenciaisValidasEmiteJwtAssinado`: login correto devolve `200` e um JWT no formato `header.payload.assinatura`.
+- `loginComSenhaIncorretaRetorna401`: senha errada devolve `401`.
+- `recursoProtegidoSemTokenRetorna401`: `/carteira/posicoes` e `/auth/me` sem token devolvem `401`.
+- `recursoProtegidoComTokenEmitidoRetorna200`: o token recebido no login dá acesso a um recurso protegido (`200`).
+- `tokenAdulteradoRetorna401`: trocar um caractere da assinatura faz o token ser recusado (`401`).
+- `tokenExpiradoRetorna401`: token com assinatura válida, mas vencido, é recusado (`401`).
+- `escritaComPapelUserRetorna403`: usuário `USER` tentando cadastrar corretora recebe `403`.
+- `meDevolveOUsuarioDoTokenSemExporSenha`: `/auth/me` devolve id, email e papel, sem senha nem hash.
+
+**🆕 `JwtDecoderValidationTest`**: testa direto o decodificador de JWT do Spring Security.
+
+- `tokenValidoDecodificaComSucesso`: um token válido é aceito e os dados são lidos.
+- `tokenComAssinaturaDiferenteNaoDecodifica`: um token assinado com outra chave é recusado.
+- `tokenExpiradoNaoDecodifica`: um token vencido é recusado.
+- `tokenComEmissorDiferenteDoEsperadoNaoDecodifica`: um token de outro emissor (`iss`) é recusado.
+- `tokenMalformadoNaoDecodifica`: um texto que não é JWT é recusado.
+
+**🆕 `JwtPropertiesTest`**: configurações do JWT validadas na inicialização, com valores de fronteira. São 7 métodos, que dão 10 execuções.
+
+- `segredoComExatamente32BytesEhAceito`: um segredo de 32 bytes (256 bits, o mínimo do HS256) é aceito.
+- `segredoCom31BytesEhRecusado`: um segredo de 31 bytes é recusado.
+- `segredoAusenteEhRecusado`: um segredo nulo é recusado.
+- `tamanhoDoSegredoEhMedidoEmBytesUtf8ENaoEmCaracteres`: 16 caracteres acentuados ocupam 32 bytes e são aceitos.
+- `expiracaoNaoPositivaEhRecusada` (parametrizado: 0 e -1): expiração zero ou negativa é recusada.
+- `expiracaoDeUmMinutoEhAceita`: 1 minuto, o menor valor válido, é aceito.
+- `emissorAusenteOuEmBrancoEhRecusado` (parametrizado: nulo, vazio e em branco): emissor inválido é recusado.
+
+**🆕 `JwtPrincipalConverterTest`**: conversão do token no usuário autenticado.
+
+- `converteSubjectParaUsuarioIdELeAuthorities`: o `sub` vira o id do usuário e a claim `authorities` vira os papéis.
+- `semClaimAuthoritiesResultaEmListaVazia`: um token sem papéis não quebra e resulta numa lista vazia.
+
+**✏️ `JwtServiceTest`**: reescrito para a API nativa (`JwtEncoder`) ensinada na aula.
+
+- `geraTokenComSubjectEAuthorities`: o token gerado tem o id do usuário no `sub` e os papéis na claim `authorities`.
+- `jwtPropertiesRejeitaSegredoCurto`: um segredo curto demais é recusado.
+- `jwtPropertiesRejeitaExpiracaoNaoPositiva`: expiração 0 é recusada.
+- `jwtPropertiesRejeitaEmissorEmBranco`: emissor em branco é recusado.
+
+**✏️ `AuthServiceTest`**
+
+- `loginComCredenciaisValidasRetornaTokenComAuthorities`: o login usa o `AuthenticationManager` e o token sai com o papel do usuário.
+- `loginComUsuarioDesativadoLancaCredenciaisInvalidasComMensagemGenerica`: um usuário desativado não entra, e a mensagem não revela o motivo.
+
+**✏️ `AuthControllerTest`**
+
+- `meRetornaUsuarioDoTokenAutenticado`: `GET /auth/me` devolve os dados do usuário dono do token.
+
+**🆕 `AdminInitializerTest`**: administrador inicial criado no startup.
+
+- `criaAdminQuandoEmailAindaNaoExiste`: na primeira subida, cria o `ADMIN` com a senha em hash BCrypt.
+- `naoCriaAdminQuandoEmailJaExiste`: nas subidas seguintes, não duplica nem sobrescreve o administrador.
+
+### Aula 14: controle de acesso / RBAC (34 execuções)
+
+**🆕 `UsuarioFluxoIntegrationTest`**: integração completa da administração de usuários. O administrador é criado no banco e faz login real.
+
+- `administradorCriaUsuarioComHashBcryptSemExporSenhaNaResposta`: devolve `201`; a resposta não tem senha nem hash; no banco, a senha está como hash BCrypt (`$2...`).
+- `listagemAdministrativaNaoExpoeSenhaNemHash`: a listagem de usuários não mostra senha nem hash.
+- `alteracaoDePapelESituacaoEhPersistidaEDesativadoNaoAutentica`: nome, papel e situação são gravados, e o usuário desativado não consegue mais logar (`401`).
+- `trocaDeSenhaInvalidaASenhaAntigaEAceitaANova`: depois da troca, a senha antiga dá `401` e a nova dá `200`.
+- `naoPermiteRebaixarOUltimoAdministradorAtivo`: rebaixar o único `ADMIN` devolve `422`, e ele continua `ADMIN`.
+- `usuarioComumComTokenRealNaoGerenciaUsuarios`: um `USER` com JWT real em `/usuarios` recebe `403`.
+- `semTokenRetorna401`: `/usuarios` sem token devolve `401`.
+- `userNaoDeveGerenciarUsuarios`: exemplo literal da aula, com `@WithMockUser(roles = "USER")`, devolve `403`.
+- `adminSimuladoListaUsuarios`: `@WithMockUser(roles = "ADMIN")` devolve `200`.
+
+**🆕 `UsuarioControllerTest`**: camada web de `/usuarios`, com o serviço simulado.
+
+- `listarComAdminRetorna200`: `ADMIN` lista usuários.
+- `buscarPorIdInexistenteRetorna404`: id inexistente devolve `404`.
+- `criarComAdminRetorna201`: `ADMIN` cadastra usuário.
+- `atualizarComAdminRetorna200`: `ADMIN` altera nome, email, papel e situação.
+- `alterarSenhaComAdminRetorna204`: `ADMIN` define uma nova senha.
+- `acessoSemTokenRetorna401`: sem token devolve `401`.
+- `acessoComUsuarioComumRetorna403`: com papel `USER` devolve `403`.
+
+**🆕 `UsuarioServiceTest`**: regras de negócio da administração de usuários.
+
+- `listarDelegaAoRepository`: a listagem vem do repositório.
+- `buscarPorIdInexistenteLancaRecursoNaoEncontrado`: id inexistente lança "não encontrado".
+- `criarComSucessoCodificaSenhaEUsaPapelInformado`: a senha é gravada em hash e o papel informado é respeitado.
+- `criarComEmailJaCadastradoLancaExcecao`: email repetido é recusado.
+- `atualizarComSucessoAlteraEmailPapelEAtivo`: email, papel e situação são atualizados.
+- `atualizarAlteraONome`: o nome é atualizado. Esse teste achou um bug real: o nome era descartado. Foi o ciclo TDD 1.
+- `atualizarMantendoOProprioEmailNaoLancaConflito`: manter o próprio email não conta como duplicado.
+- `atualizarComEmailDeOutroUsuarioLancaConflito`: usar o email de outra pessoa é recusado.
+- `rebaixarOUltimoAdministradorAtivoLancaExcecao`: não deixa rebaixar o último `ADMIN` (ciclo TDD 2).
+- `desativarOUltimoAdministradorAtivoLancaExcecao`: não deixa desativar o último `ADMIN` (ciclo TDD 2).
+- `rebaixarAdministradorQuandoExisteOutroAdministradorAtivoEhPermitido`: com outro `ADMIN` ativo, o rebaixamento é permitido.
+- `manterOUltimoAdministradorComoAdminAtivoNaoConsultaContagem`: se nada muda no papel, o banco não é consultado à toa.
+- `reativarAdministradorDesativadoNaoConsultaContagem`: reativar um administrador não precisa da contagem.
+- `alterarSenhaGeraNovoHash`: a troca de senha grava um hash novo, e a senha nova confere com ele.
+
+**✏️ `CorretoraFluxoIntegrationTest`**: autorização na escrita de corretoras.
+
+- `cadastroSemTokenRetorna401`: cadastrar corretora sem login devolve `401`.
+- `cadastroComUsuarioSemPapelAdminRetorna403`: cadastrar como `USER` devolve `403`.
+
+**✏️ `AcaoFluxoIntegrationTest`**: autorização na escrita de ações.
+
+- `cadastroSemTokenRetorna401`: cadastrar ação sem login devolve `401`.
+- `cadastroComUsuarioSemPapelAdminRetorna403`: cadastrar como `USER` devolve `403`.
+
+Os testes de fluxo que já existiam para corretoras e ações passaram a fazer login como `ADMIN`
+antes de cadastrar, que é a regra nova.
+
+### Aula 15: testes, TDD e cobertura (19 execuções)
+
+**🆕 `SenhaValidacaoTest`**: `@ParameterizedTest` com valores de fronteira. São 3 métodos × 4 tamanhos, o que dá 12 execuções.
+
+- `cadastroPeloAdministradorRespeitaLimitesDaSenha`: senhas de 7, 8, 72 e 73 caracteres em `UsuarioCreateRequest`.
+- `autocadastroRespeitaLimitesDaSenha`: as mesmas fronteiras em `RegistrarUsuarioRequest`.
+- `trocaDeSenhaRespeitaLimitesDaSenha`: as mesmas fronteiras em `AlterarSenhaRequest`.
+
+Resultado esperado: 7 → inválida · 8 → válida · 72 → válida · 73 → inválida (ciclo TDD 3).
+
+**🆕 `CorrelationIdFilterTest`**: rastreamento de requisições. São 3 métodos, que dão 4 execuções.
+
+- `reaproveitaOCorrelationIdRecebidoEOExpoeNoMdcDuranteARequisicao`: o `X-Correlation-Id` recebido é reaproveitado e aparece nos logs.
+- `geraUmUuidQuandoOCabecalhoNaoEhEnviado`: sem cabeçalho, o filtro gera um UUID.
+- `geraUmUuidQuandoOCabecalhoVemEmBranco` (parametrizado): com cabeçalho vazio ou em branco, também gera um UUID.
+
+**🆕 `GlobalExceptionHandlerTest`**: tratamento de erros.
+
+- `excecaoInesperadaViraErro500ComMensagemGenericaSemVazarDetalhes`: um erro inesperado vira `500` sem mostrar detalhes internos.
+- `excecaoDoSpringComStatusProprioPreservaOStatusEAInstanciaJaDefinida`: erros do Spring com status próprio (ex.: `405`) não viram `500`.
+- `excecaoDoSpringSemInstanciaRecebeAUriDaRequisicao`: a resposta de erro informa a URI da requisição.
+
+Também fazem parte da Aula 15, mas não são classes de teste:
+
+- **3 ciclos TDD** (Red → Green → Refactor), com a saída real da falha: nome na atualização, último administrador e fronteiras da senha. Ver seção 5 abaixo.
+- **2 testes de mutação manuais** (`<= 1` → `< 1` e `< 32` → `< 31`), os dois detectados pelos testes. Ver seção 7.
+- **Portão JaCoCo** de 85% de linhas e 80% de ramos no `./mvnw clean verify`. O build falha se a cobertura cair.
+- **Integração contínua**: `.github/workflows/testes.yml` roda a suíte e o portão a cada push.
+
+### Como rodar só os testes de cada aula
+
+```bash
+# Aula 13
+./mvnw test -Dtest='AuthFluxoIntegrationTest,JwtDecoderValidationTest,JwtPropertiesTest,JwtPrincipalConverterTest,JwtServiceTest,AuthServiceTest,AuthControllerTest,AdminInitializerTest'
+
+# Aula 14
+./mvnw test -Dtest='UsuarioFluxoIntegrationTest,UsuarioControllerTest,UsuarioServiceTest,CorretoraFluxoIntegrationTest,AcaoFluxoIntegrationTest'
+
+# Aula 15
+./mvnw test -Dtest='SenhaValidacaoTest,CorrelationIdFilterTest,GlobalExceptionHandlerTest'
+
+# tudo + relatório + portão de cobertura
+./mvnw clean verify
+```
+
+No Windows (PowerShell), troque `./mvnw` por `.\mvnw.cmd` e use aspas duplas no `-Dtest`.
+
 ## Complemento de testes das Aulas 13, 14 e 15 (revisão contra o material)
 
 Esta seção registra a segunda etapa de trabalho sobre as Aulas 13, 14 e 15. A primeira etapa
