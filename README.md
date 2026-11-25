@@ -158,7 +158,7 @@ Matriz de acesso aplicada ao domínio do gestao-acoes (diferente do `suporteos20
 | Ciclos TDD Red → Green → Refactor com evidência da falha | ✅ 3 ciclos em `UsuarioService`/DTOs (nome não era gravado na atualização — defeito real; último administrador; senha 8–72) — saídas em [`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md) |
 | Testes parametrizados e valores de fronteira | ✅ `SenhaValidacaoTest` (7/8/72/73 caracteres), `JwtPropertiesTest` (segredo 31/32 bytes, expiração 0/1, emissor nulo/vazio/em branco), `CorrelationIdFilterTest` |
 | Teste que detecta alteração proposital (mutação) | ✅ dois mutantes manuais (`<= 1`→`< 1` e `< 32`→`< 31`), ambos mortos — ver documento de evidências |
-| Integração contínua | ✅ `.github/workflows/testes.yml` roda `./mvnw --batch-mode clean verify` e publica o relatório JaCoCo |
+| Integração contínua | ✅ `.github/workflows/testes.yml` roda `./mvnw --batch-mode clean verify` e publica o relatório JaCoCo; um segundo job roda os testes e o portão de cobertura do frontend (`npm run test:coverage`) |
 | Suíte cresceu sem reduzir o enunciado de nenhum teste existente | ✅ 226 testes (eram 170 antes desta etapa, 140 antes das aulas), 0 falhas, nenhuma exclusão no JaCoCo |
 
 **Extensão além da aula — tela de administração de usuários (frontend)**
@@ -600,6 +600,14 @@ DTOs e a própria classe testada nunca são mockados.
 3. executa `./mvnw --batch-mode clean verify`, o mesmo comando usado localmente, com testes e portão
    JaCoCo;
 4. publica `target/site/jacoco/` como artefato `relatorio-jacoco`, mesmo se o build falhar.
+
+Depois das aulas, o mesmo workflow ganhou um segundo job, **frontend (Vitest)**, que roda em paralelo
+ao do backend:
+
+1. instala o Node 22 (mesma versão do `frontend/Dockerfile`) com cache do npm;
+2. executa `npm ci` e `npm run test:coverage` dentro de `frontend/` — o mesmo comando usado
+   localmente, com os 165 testes e o portão de 85% do `angular.json`;
+3. publica `frontend/coverage/frontend/` como artefato `relatorio-cobertura-frontend`, mesmo se falhar.
 
 ### 10. Postman
 

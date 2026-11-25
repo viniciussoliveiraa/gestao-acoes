@@ -1,5 +1,7 @@
-# Aula 15, seção 20: o CI executa exatamente o mesmo comando usado localmente
-# (./mvnw clean verify), então testes + portão JaCoCo valem igual para todos.
+# Aula 15, seção 20: o CI executa exatamente os mesmos comandos usados localmente, então testes
+# e portões de cobertura valem igual para todos. Dois jobs independentes (rodam em paralelo):
+#   - backend:  ./mvnw clean verify      (testes + JaCoCo, portão 85% linhas/ramos no pom.xml)
+#   - frontend: npm run test:coverage    (testes + Vitest/coverage-v8, portão 85% no angular.json)
 name: testes
 
 on:
@@ -8,6 +10,7 @@ on:
 
 jobs:
   verificar:
+    name: backend (JaCoCo)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,3 +27,25 @@ jobs:
         with:
           name: relatorio-jacoco
           path: target/site/jacoco/
+
+  frontend:
+    name: frontend (Vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # mesma versão do frontend/Dockerfile (node:22-alpine)
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run test:coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: relatorio-cobertura-frontend
+          path: frontend/coverage/frontend/

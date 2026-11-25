@@ -75,6 +75,7 @@ Suíte do Angular CLI com Vitest (ambiente jsdom) e cobertura via `@vitest/cover
 - **Onde estão**: um `.spec.ts` ao lado de cada parte testada; telas agrupadas em `features/cadastros.spec.ts` (Corretoras, Ações, Lançamentos, Proventos) e `features/carteira.spec.ts` (Resumo, Reequilíbrio).
 - **Apoio**: `src/test-setup.ts` simula `window.matchMedia` (o jsdom não tem); `core/testing/dados.ts` tem dados de exemplo e o erro HTTP simulado; `core/testing/jwt-falso.ts` monta tokens para testar login/papel.
 - Nenhum teste chama a API de verdade (serviços simulados e `HttpTestingController`), e nada disso entra no build de produção.
+- **CI**: o job "frontend (Vitest)" de `.github/workflows/testes.yml` roda `npm ci` + `npm run test:coverage` a cada push e publica o relatório como artefato `relatorio-cobertura-frontend`.
 
 ## Limitações conhecidas
 
