@@ -18,6 +18,17 @@ export class AuthService {
     () => (this.decodificarPayload(this.tokenSignal())?.['email'] as string | undefined) ?? null
   );
 
+  /** Id do usuário logado (claim `sub` do JWT). */
+  readonly idUsuario = computed(() => {
+    const sub = this.decodificarPayload(this.tokenSignal())?.['sub'];
+    return sub === undefined || sub === null ? null : Number(sub);
+  });
+  /** Verdadeiro quando a claim `authorities` do JWT contém ROLE_ADMIN (só controla o que a tela mostra). */
+  readonly administrador = computed(() => {
+    const authorities = this.decodificarPayload(this.tokenSignal())?.['authorities'];
+    return this.autenticado() && Array.isArray(authorities) && authorities.includes('ROLE_ADMIN');
+  });
+
   constructor(private readonly http: HttpClient) {}
 
   token(): string | null {

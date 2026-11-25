@@ -161,6 +161,24 @@ Matriz de acesso aplicada ao domínio do gestao-acoes (diferente do `suporteos20
 | Integração contínua | ✅ `.github/workflows/testes.yml` roda `./mvnw --batch-mode clean verify` e publica o relatório JaCoCo |
 | Suíte cresceu sem reduzir o enunciado de nenhum teste existente | ✅ 226 testes (eram 170 antes desta etapa, 140 antes das aulas), 0 falhas, nenhuma exclusão no JaCoCo |
 
+**Extensão além da aula — tela de administração de usuários (frontend)**
+
+A Aula 14 entregou o gerenciamento de usuários só na API (`/usuarios`). Depois das aulas, o frontend ganhou a tela **Administração → Usuários** (`/usuarios`), que usa esses mesmos endpoints — nenhuma mudança no backend foi necessária:
+
+| O que a tela faz | Endpoint usado |
+|---|---|
+| Lista todos os usuários (nome, email/login, papel, situação; o próprio admin aparece marcado como "você") | `GET /usuarios` |
+| Altera o **login (email)**, nome, papel (`USER`/`ADMIN`) e situação (ativo/inativo) | `PUT /usuarios/{id}` |
+| Define uma **nova senha** (8 a 72 caracteres, com confirmação) | `PUT /usuarios/{id}/senha` |
+
+- O link no menu e a rota só aparecem/abrem para quem tem `ROLE_ADMIN` na claim `authorities` do JWT (`adminGuard`, `AuthService.administrador()`); um `USER` que digitar `/usuarios` volta para o Resumo. Isso é só conveniência de interface — quem garante a regra é o `@PreAuthorize` do backend (`403` para `USER`).
+- Dados e senha são salvos por formulários separados, espelhando a separação `UsuarioUpdateRequest` × `AlterarSenhaRequest` do backend.
+- Erros do backend aparecem na própria tela: email já usado por outro usuário (`409`), senha fora do tamanho (`400`), rebaixar/desativar o último administrador ativo (`422`).
+- Ao trocar o próprio email, o admin é avisado para usar o novo email no próximo login (o token atual continua válido até expirar).
+- Verificado no ambiente Docker: após trocar login e senha de um usuário, o login com os dados antigos devolve `401` e com os novos `200`.
+
+Arquivos: `frontend/src/app/features/usuarios/` (tela), `core/services/usuario.service.ts`, `core/models/usuario.model.ts`, `core/guards/admin.guard.ts`, e ajustes em `core/services/auth.service.ts`, `app.routes.ts` e `features/shell/shell.html`.
+
 **Meta acadêmica declarada**: 80% linhas / 80% ramos — **atingida** (96,86% / 87,50%). Progressão do portão de ramos: `0.70` → `0.80` → `0.85`, cada passo elevado só depois de a nova suíte sustentá-lo. Justificativas, explicação `401` × `403`, regra horizontal, posição de cada `@PreAuthorize`, uso de dublês e evidências de TDD/mutação estão em [`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md).
 
 ## Todos os testes feitos nas Aulas 13, 14 e 15

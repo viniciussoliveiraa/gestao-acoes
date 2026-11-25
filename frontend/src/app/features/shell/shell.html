@@ -46,6 +46,16 @@
           <span matListItemTitle>Ações</span>
         </a>
       </mat-nav-list>
+
+      @if (authService.administrador()) {
+        <span class="shell__nav-label">Administração</span>
+        <mat-nav-list>
+          <a mat-list-item routerLink="/usuarios" routerLinkActive="shell__link--active">
+            <mat-icon matListItemIcon>manage_accounts</mat-icon>
+            <span matListItemTitle>Usuários</span>
+          </a>
+        </mat-nav-list>
+      }
     </nav>
   </mat-sidenav>
 

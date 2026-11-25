@@ -1,6 +1,6 @@
 # Frontend — Sistema de Gestão de Ações
 
-Interface Angular (standalone components, Angular 22) para o [backend Spring Boot](../README.md): login/cadastro, dashboard de carteira (Resumo, Lançamentos, Proventos, Gráficos, Rebalanceamento) e cadastro/listagem de Corretoras/Ações. Gerado com Angular CLI e detalhado em `openspec/changes/adicionar-carteira-auth-frontend-angular/`.
+Interface Angular (standalone components, Angular 22) para o [backend Spring Boot](../README.md): login/cadastro, dashboard de carteira (Resumo, Lançamentos, Proventos, Gráficos, Rebalanceamento) cadastro/listagem de Corretoras/Ações e, para administradores, gerenciamento de usuários (login, senha, papel e situação). Gerado com Angular CLI e detalhado em `openspec/changes/adicionar-carteira-auth-frontend-angular/`.
 
 ## Pré-requisitos
 
@@ -20,23 +20,24 @@ npm start   # equivalente a `ng serve`, sobe em http://localhost:4200
 
 1. Abra `http://localhost:4200` → redireciona para `/login`.
 2. Cadastre-se em "Cadastre-se" ou faça login (token JWT armazenado no navegador).
-3. **Corretoras** e **Ações** podem ser cadastradas sem login (endpoints públicos no backend, só cadastro + listagem — sem edição/exclusão) — cadastre ao menos uma de cada para poder registrar lançamentos.
+3. **Corretoras** e **Ações** podem ser consultadas sem login; cadastrá-las exige login como administrador (Aula 14 — RBAC; só cadastro + listagem, sem edição/exclusão) — cadastre ao menos uma de cada para poder registrar lançamentos.
 4. **Lançamentos**: registre uma compra ou venda (tipo + ação + corretora + quantidade + preço + data) — ao escolher a ação, o preço unitário já vem preenchido com a cotação atual dela (pode ser ajustado). Venda é validada contra o saldo disponível do ativo. Lançamentos já registrados podem ser excluídos (recalcula a posição do ativo); ainda não há edição.
 5. **Resumo**: mostra a posição consolidada calculada a partir dos lançamentos.
 6. **Proventos**: registre dividendos/JCP recebidos.
 7. **Gráficos**: alocação por ativo e evolução do valor investido.
 8. **Rebalanceamento**: defina metas de alocação (%) por ativo e veja a sugestão de aporte para se aproximar da meta; as metas ficam salvas só no navegador (`localStorage`), não no backend.
+9. **Usuários** (só aparece para administradores, em "Administração"): lista os usuários; em **Editar** é possível alterar o login (email), nome, papel e situação (ativo/inativo) e, em outro formulário, definir uma nova senha (8 a 72 caracteres, com confirmação).
 
 ## Estrutura
 
 ```
 src/app/
   core/
-    guards/        authGuard (protege Resumo/Lançamentos/Proventos/Gráficos/Rebalanceamento)
+    guards/        authGuard (protege Resumo/Lançamentos/Proventos/Gráficos/Rebalanceamento), adminGuard (Usuários)
     i18n/          textos do paginator do Angular Material em pt-BR
     interceptors/  authInterceptor (anexa Bearer token, trata 401 global)
     models/        interfaces TypeScript espelhando os DTOs do backend
-    services/      um serviço HTTP por recurso (Auth, Carteira, Provento, Corretora, Acao)
+    services/      um serviço HTTP por recurso (Auth, Carteira, Provento, Corretora, Acao, Usuario)
   features/
     auth/          login, registro
     shell/         layout com sidebar/toolbar (envolve as telas autenticadas e públicas)
@@ -47,6 +48,7 @@ src/app/
     rebalanceamento/ metas de alocação por ativo (localStorage) e sugestão de aporte
     corretoras/    cadastro e listagem de corretoras (público, sem edição/exclusão)
     acoes/         cadastro e listagem de ações (público, sem edição/exclusão)
+    usuarios/      administração de usuários: alterar login, senha, papel e situação (só ADMIN)
 ```
 
 ## Build de produção
@@ -68,4 +70,5 @@ Roda a suíte padrão do Angular CLI (Vitest). Cobertura mínima — o esforço 
 ## Limitações conhecidas
 
 - Sem refresh token — o JWT expira (`APP_JWT_EXPIRATION_MINUTES` no backend) e força novo login.
-- Sem autorização por papéis — todo usuário autenticado só enxerga os próprios lançamentos/proventos.
+- Cada usuário (inclusive o administrador) só enxerga os próprios lançamentos/proventos; o papel `ADMIN` libera o cadastro de corretoras/ações e a tela de Usuários.
+- Ao trocar o próprio email, o nome exibido no topo só muda no próximo login (o token atual continua válido até expirar).

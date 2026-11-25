@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth.guard';
 import { Login } from './features/auth/login/login';
 import { Registro } from './features/auth/registro/registro';
@@ -51,6 +52,12 @@ export const routes: Routes = [
         path: 'acoes',
         data: { titulo: 'Ações', icone: 'trending_up' },
         loadComponent: () => import('./features/acoes/acoes').then((m) => m.Acoes),
+      },
+      {
+        path: 'usuarios',
+        canActivate: [adminGuard],
+        data: { titulo: 'Usuários', icone: 'manage_accounts' },
+        loadComponent: () => import('./features/usuarios/usuarios').then((m) => m.Usuarios),
       },
     ],
   },
