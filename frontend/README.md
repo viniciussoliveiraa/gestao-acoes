@@ -26,7 +26,8 @@ npm start   # equivalente a `ng serve`, sobe em http://localhost:4200
 6. **Proventos**: registre dividendos/JCP recebidos.
 7. **Gráficos**: alocação por ativo e evolução do valor investido.
 8. **Rebalanceamento**: defina metas de alocação (%) por ativo e veja a sugestão de aporte para se aproximar da meta; as metas ficam salvas só no navegador (`localStorage`), não no backend.
-9. **Usuários** (só aparece para administradores, em "Administração"): lista os usuários; em **Editar** é possível alterar o login (email), nome, papel e situação (ativo/inativo) e, em outro formulário, definir uma nova senha (8 a 72 caracteres, com confirmação).
+9. **Modo noturno**: o botão de lua/sol na barra do topo alterna entre modo claro e escuro; a escolha fica salva no navegador (sem escolha, segue o modo do sistema operacional).
+10. **Usuários** (só aparece para administradores, em "Administração"): lista os usuários; em **Editar** é possível alterar o login (email), nome, papel e situação (ativo/inativo) e, em outro formulário, definir uma nova senha (8 a 72 caracteres, com confirmação).
 
 ## Estrutura
 
@@ -37,7 +38,7 @@ src/app/
     i18n/          textos do paginator do Angular Material em pt-BR
     interceptors/  authInterceptor (anexa Bearer token, trata 401 global)
     models/        interfaces TypeScript espelhando os DTOs do backend
-    services/      um serviço HTTP por recurso (Auth, Carteira, Provento, Corretora, Acao, Usuario)
+    services/      um serviço HTTP por recurso (Auth, Carteira, Provento, Corretora, Acao, Usuario) + TemaService (modo claro/escuro)
   features/
     auth/          login, registro
     shell/         layout com sidebar/toolbar (envolve as telas autenticadas e públicas)

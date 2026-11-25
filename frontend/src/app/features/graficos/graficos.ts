@@ -1,5 +1,5 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,6 +8,7 @@ import { BaseChartDirective } from 'ng2-charts';
 import { AcaoService } from '../../core/services/acao.service';
 import { CarteiraService } from '../../core/services/carteira.service';
 import { ProventoService } from '../../core/services/provento.service';
+import { Tema, TemaService } from '../../core/services/tema.service';
 import { AcaoResponse } from '../../core/models/acao.model';
 import { LancamentoResponse, PosicaoResponse } from '../../core/models/carteira.model';
 import { ProventoResponse, TipoProvento } from '../../core/models/provento.model';
@@ -26,6 +27,8 @@ interface ItemDistribuicao {
   styleUrl: './graficos.scss',
 })
 export class Graficos implements OnInit {
+  private readonly temaService = inject(TemaService);
+
   protected readonly semDados = signal(true);
   protected readonly posicoes = signal<PosicaoResponse[]>([]);
   protected readonly lancamentos = signal<LancamentoResponse[]>([]);
@@ -59,6 +62,52 @@ export class Graficos implements OnInit {
   ];
   private static readonly COR_OUTROS = '#898781';
   private static readonly LIMITE_SERIES = 7;
+
+  // O canvas do Chart.js não enxerga as variáveis CSS do tema, então textos, grade, bordas e
+  // cores de marca dos gráficos vêm daqui, conforme o modo claro/escuro (TemaService). A paleta
+  // categórica acima vale para os dois modos.
+  private static readonly CORES: Record<Tema, {
+    texto: string;
+    textoSuave: string;
+    textoFraco: string;
+    grade: string;
+    superficie: string;
+    tooltip: string;
+    linha: string;
+    linhaRgb: string;
+    barra: string;
+    positivo: string;
+    negativo: string;
+  }> = {
+    claro: {
+      texto: '#2f3137',
+      textoSuave: '#6b6f76',
+      textoFraco: '#898781',
+      grade: '#e3e2df',
+      superficie: '#ffffff',
+      tooltip: '#2f3137',
+      linha: '#8a7454',
+      linhaRgb: '138, 116, 84',
+      barra: '#a38c65',
+      positivo: '#009974',
+      negativo: '#cb0b38',
+    },
+    escuro: {
+      texto: '#e9e7e2',
+      textoSuave: '#a7aab0',
+      textoFraco: '#8d8f96',
+      grade: '#2c2f36',
+      superficie: '#1c1e24',
+      tooltip: '#3a3d46',
+      linha: '#d3b583',
+      linhaRgb: '211, 181, 131',
+      barra: '#c9a876',
+      positivo: '#2fc79a',
+      negativo: '#ff5d7d',
+    },
+  };
+
+  private readonly cores = computed(() => Graficos.CORES[this.temaService.tema()]);
 
   // ---------- KPIs ----------
 
@@ -97,7 +146,7 @@ export class Graficos implements OnInit {
 
   protected readonly alocacaoData = computed<ChartData<'doughnut'>>(() => this.paraDoughnut(this.alocacaoLista()));
 
-  protected readonly alocacaoOptions: ChartConfiguration<'doughnut'>['options'] = this.opcoesDoughnut();
+  protected readonly alocacaoOptions = computed(() => this.opcoesDoughnut());
 
   // Desenha o patrimônio total no centro do donut — o "buraco" deixa de ser espaço
   // vazio e passa a reforçar a leitura da carteira como um todo.
@@ -113,13 +162,14 @@ export class Graficos implements OnInit {
       const cx = (chartArea.left + chartArea.right) / 2;
       const cy = (chartArea.top + chartArea.bottom) / 2;
 
+      const cores = this.cores();
       ctx.save();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#898781';
+      ctx.fillStyle = cores.textoFraco;
       ctx.font = `600 12px ${Graficos.FONTE}`;
       ctx.fillText('Patrimônio', cx, cy - 13);
-      ctx.fillStyle = '#2f3137';
+      ctx.fillStyle = cores.texto;
       ctx.font = `700 21px ${Graficos.FONTE}`;
       ctx.fillText(Graficos.MOEDA_COMPACTA.format(total), cx, cy + 12);
       ctx.restore();
@@ -182,6 +232,7 @@ export class Graficos implements OnInit {
       (a, b) => new Date(a.dataOperacao).getTime() - new Date(b.dataOperacao).getTime()
     );
 
+    const cores = this.cores();
     let acumulado = 0;
     const pontos = ordenados.map((l) => {
       acumulado += l.quantidade * l.precoUnitario;
@@ -194,20 +245,20 @@ export class Graficos implements OnInit {
         {
           label: 'Valor investido acumulado',
           data: pontos.map((p) => p.valor),
-          borderColor: '#8a7454',
+          borderColor: cores.linha,
           backgroundColor: (context: ScriptableContext<'line'>) => {
             const { chart } = context;
             const { ctx, chartArea } = chart;
             if (!chartArea) {
-              return 'rgba(138, 116, 84, 0.2)';
+              return `rgba(${cores.linhaRgb}, 0.2)`;
             }
             const gradiente = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-            gradiente.addColorStop(0, 'rgba(138, 116, 84, 0.32)');
-            gradiente.addColorStop(1, 'rgba(138, 116, 84, 0)');
+            gradiente.addColorStop(0, `rgba(${cores.linhaRgb}, 0.32)`);
+            gradiente.addColorStop(1, `rgba(${cores.linhaRgb}, 0)`);
             return gradiente;
           },
-          pointBackgroundColor: '#8a7454',
-          pointBorderColor: '#ffffff',
+          pointBackgroundColor: cores.linha,
+          pointBorderColor: cores.superficie,
           pointBorderWidth: 2,
           pointRadius: pontos.length > 1 ? 3 : 4,
           pointHoverRadius: 6,
@@ -219,53 +270,57 @@ export class Graficos implements OnInit {
     };
   });
 
-  protected readonly evolucaoOptions: ChartConfiguration<'line'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: '#2f3137',
-        titleFont: { family: Graficos.FONTE, weight: 'bold' },
-        bodyFont: { family: Graficos.FONTE },
-        padding: 12,
-        cornerRadius: 8,
-        callbacks: {
-          label: (ctx) => ` ${Graficos.MOEDA.format(Number(ctx.raw) || 0)}`,
+  protected readonly evolucaoOptions = computed<ChartConfiguration<'line'>['options']>(() => {
+    const cores = this.cores();
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: cores.tooltip,
+          titleFont: { family: Graficos.FONTE, weight: 'bold' },
+          bodyFont: { family: Graficos.FONTE },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: (ctx) => ` ${Graficos.MOEDA.format(Number(ctx.raw) || 0)}`,
+          },
         },
       },
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { font: { family: Graficos.FONTE, size: 12 }, color: '#6b6f76' },
-      },
-      y: {
-        beginAtZero: true,
-        grid: { color: '#e3e2df' },
-        border: { display: false },
-        ticks: {
-          font: { family: Graficos.FONTE, size: 12 },
-          color: '#6b6f76',
-          callback: (valor) => Graficos.MOEDA_COMPACTA.format(Number(valor)),
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: Graficos.FONTE, size: 12 }, color: cores.textoSuave },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: cores.grade },
+          border: { display: false },
+          ticks: {
+            font: { family: Graficos.FONTE, size: 12 },
+            color: cores.textoSuave,
+            callback: (valor) => Graficos.MOEDA_COMPACTA.format(Number(valor)),
+          },
         },
       },
-    },
-  };
+    };
+  });
 
   // ---------- Retorno por ativo (barra horizontal, cor = polaridade) ----------
 
   protected readonly retornoAltura = computed(() => Math.max(220, this.posicoes().length * 38));
 
   protected readonly retornoData = computed<ChartData<'bar'>>(() => {
+    const cores = this.cores();
     const ordenadas = [...this.posicoes()].sort((a, b) => b.variacaoPercentual - a.variacaoPercentual);
     return {
       labels: ordenadas.map((p) => p.ticker),
       datasets: [
         {
           data: ordenadas.map((p) => p.variacaoPercentual),
-          backgroundColor: ordenadas.map((p) => (p.variacaoPercentual >= 0 ? '#009974' : '#cb0b38')),
+          backgroundColor: ordenadas.map((p) => (p.variacaoPercentual >= 0 ? cores.positivo : cores.negativo)),
           borderRadius: 4,
           barThickness: 18,
         },
@@ -273,43 +328,47 @@ export class Graficos implements OnInit {
     };
   });
 
-  protected readonly retornoOptions: ChartConfiguration<'bar'>['options'] = {
-    indexAxis: 'y' as const,
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: '#2f3137',
-        titleFont: { family: Graficos.FONTE, weight: 'bold' },
-        bodyFont: { family: Graficos.FONTE },
-        padding: 12,
-        cornerRadius: 8,
-        callbacks: {
-          label: (ctx) => ` ${(Number(ctx.raw) || 0).toFixed(2)}%`,
+  protected readonly retornoOptions = computed<ChartConfiguration<'bar'>['options']>(() => {
+    const cores = this.cores();
+    return {
+      indexAxis: 'y' as const,
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: cores.tooltip,
+          titleFont: { family: Graficos.FONTE, weight: 'bold' },
+          bodyFont: { family: Graficos.FONTE },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: (ctx) => ` ${(Number(ctx.raw) || 0).toFixed(2)}%`,
+          },
         },
       },
-    },
-    scales: {
-      x: {
-        grid: { color: '#e3e2df' },
-        border: { display: false },
-        ticks: {
-          font: { family: Graficos.FONTE, size: 12 },
-          color: '#6b6f76',
-          callback: (valor) => `${valor}%`,
+      scales: {
+        x: {
+          grid: { color: cores.grade },
+          border: { display: false },
+          ticks: {
+            font: { family: Graficos.FONTE, size: 12 },
+            color: cores.textoSuave,
+            callback: (valor) => `${valor}%`,
+          },
+        },
+        y: {
+          grid: { display: false },
+          ticks: { font: { family: Graficos.FONTE, size: 12, weight: 600 }, color: cores.texto },
         },
       },
-      y: {
-        grid: { display: false },
-        ticks: { font: { family: Graficos.FONTE, size: 12, weight: 600 }, color: '#2f3137' },
-      },
-    },
-  };
+    };
+  });
 
   // ---------- Proventos recebidos por mês (barra vertical) ----------
 
   protected readonly proventosMensaisData = computed<ChartData<'bar'>>(() => {
+    const cores = this.cores();
     const ordenados = [...this.proventos()].sort(
       (a, b) => new Date(a.dataPagamento).getTime() - new Date(b.dataPagamento).getTime()
     );
@@ -329,7 +388,7 @@ export class Graficos implements OnInit {
         {
           label: 'Proventos recebidos',
           data: chaves.map((chave) => totaisPorMes.get(chave) ?? 0),
-          backgroundColor: '#a38c65',
+          backgroundColor: cores.barra,
           borderRadius: 4,
           maxBarThickness: 34,
         },
@@ -337,39 +396,42 @@ export class Graficos implements OnInit {
     };
   });
 
-  protected readonly proventosMensaisOptions: ChartConfiguration<'bar'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: '#2f3137',
-        titleFont: { family: Graficos.FONTE, weight: 'bold' },
-        bodyFont: { family: Graficos.FONTE },
-        padding: 12,
-        cornerRadius: 8,
-        callbacks: {
-          label: (ctx) => ` ${Graficos.MOEDA.format(Number(ctx.raw) || 0)}`,
+  protected readonly proventosMensaisOptions = computed<ChartConfiguration<'bar'>['options']>(() => {
+    const cores = this.cores();
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: cores.tooltip,
+          titleFont: { family: Graficos.FONTE, weight: 'bold' },
+          bodyFont: { family: Graficos.FONTE },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: (ctx) => ` ${Graficos.MOEDA.format(Number(ctx.raw) || 0)}`,
+          },
         },
       },
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { font: { family: Graficos.FONTE, size: 12 }, color: '#6b6f76' },
-      },
-      y: {
-        beginAtZero: true,
-        grid: { color: '#e3e2df' },
-        border: { display: false },
-        ticks: {
-          font: { family: Graficos.FONTE, size: 12 },
-          color: '#6b6f76',
-          callback: (valor) => Graficos.MOEDA_COMPACTA.format(Number(valor)),
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: Graficos.FONTE, size: 12 }, color: cores.textoSuave },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: cores.grade },
+          border: { display: false },
+          ticks: {
+            font: { family: Graficos.FONTE, size: 12 },
+            color: cores.textoSuave,
+            callback: (valor) => Graficos.MOEDA_COMPACTA.format(Number(valor)),
+          },
         },
       },
-    },
-  };
+    };
+  });
 
   // ---------- Proventos por ativo (barra horizontal) ----------
 
@@ -379,6 +441,7 @@ export class Graficos implements OnInit {
   });
 
   protected readonly proventosPorAtivoData = computed<ChartData<'bar'>>(() => {
+    const cores = this.cores();
     const totais = new Map<string, number>();
     for (const p of this.proventos()) {
       totais.set(p.tickerAcao, (totais.get(p.tickerAcao) ?? 0) + p.valorTotal);
@@ -389,7 +452,7 @@ export class Graficos implements OnInit {
       datasets: [
         {
           data: ordenados.map(([, valor]) => valor),
-          backgroundColor: '#a38c65',
+          backgroundColor: cores.barra,
           borderRadius: 4,
           barThickness: 18,
         },
@@ -397,39 +460,42 @@ export class Graficos implements OnInit {
     };
   });
 
-  protected readonly proventosPorAtivoOptions: ChartConfiguration<'bar'>['options'] = {
-    indexAxis: 'y' as const,
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: '#2f3137',
-        titleFont: { family: Graficos.FONTE, weight: 'bold' },
-        bodyFont: { family: Graficos.FONTE },
-        padding: 12,
-        cornerRadius: 8,
-        callbacks: {
-          label: (ctx) => ` ${Graficos.MOEDA.format(Number(ctx.raw) || 0)}`,
+  protected readonly proventosPorAtivoOptions = computed<ChartConfiguration<'bar'>['options']>(() => {
+    const cores = this.cores();
+    return {
+      indexAxis: 'y' as const,
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: cores.tooltip,
+          titleFont: { family: Graficos.FONTE, weight: 'bold' },
+          bodyFont: { family: Graficos.FONTE },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: (ctx) => ` ${Graficos.MOEDA.format(Number(ctx.raw) || 0)}`,
+          },
         },
       },
-    },
-    scales: {
-      x: {
-        grid: { color: '#e3e2df' },
-        border: { display: false },
-        ticks: {
-          font: { family: Graficos.FONTE, size: 12 },
-          color: '#6b6f76',
-          callback: (valor) => Graficos.MOEDA_COMPACTA.format(Number(valor)),
+      scales: {
+        x: {
+          grid: { color: cores.grade },
+          border: { display: false },
+          ticks: {
+            font: { family: Graficos.FONTE, size: 12 },
+            color: cores.textoSuave,
+            callback: (valor) => Graficos.MOEDA_COMPACTA.format(Number(valor)),
+          },
+        },
+        y: {
+          grid: { display: false },
+          ticks: { font: { family: Graficos.FONTE, size: 12, weight: 600 }, color: cores.texto },
         },
       },
-      y: {
-        grid: { display: false },
-        ticks: { font: { family: Graficos.FONTE, size: 12, weight: 600 }, color: '#2f3137' },
-      },
-    },
-  };
+    };
+  });
 
   // ---------- Proventos por tipo (Dividendo vs. JCP) ----------
 
@@ -521,22 +587,24 @@ export class Graficos implements OnInit {
   }
 
   private paraDoughnut(itens: ItemDistribuicao[]): ChartData<'doughnut'> {
+    const cores = this.cores();
     return {
       labels: itens.map((i) => i.rotulo),
       datasets: [
         {
           data: itens.map((i) => i.valor),
           backgroundColor: itens.map((i) => i.cor),
-          borderColor: '#ffffff',
+          borderColor: cores.superficie,
           borderWidth: 2,
           hoverOffset: 10,
-          hoverBorderColor: '#ffffff',
+          hoverBorderColor: cores.superficie,
         },
       ],
     };
   }
 
   private opcoesDoughnut(): ChartConfiguration<'doughnut'>['options'] {
+    const cores = this.cores();
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -545,7 +613,7 @@ export class Graficos implements OnInit {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#2f3137',
+          backgroundColor: cores.tooltip,
           titleFont: { family: Graficos.FONTE, weight: 'bold' },
           bodyFont: { family: Graficos.FONTE },
           padding: 12,

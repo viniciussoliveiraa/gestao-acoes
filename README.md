@@ -179,6 +179,17 @@ A Aula 14 entregou o gerenciamento de usuários só na API (`/usuarios`). Depois
 
 Arquivos: `frontend/src/app/features/usuarios/` (tela), `core/services/usuario.service.ts`, `core/models/usuario.model.ts`, `core/guards/admin.guard.ts`, e ajustes em `core/services/auth.service.ts`, `app.routes.ts` e `features/shell/shell.html`.
 
+**Extensão além da aula — modo noturno (frontend)**
+
+Botão de lua/sol na barra do topo alterna a interface inteira entre modo claro e escuro. Só frontend, sem nenhuma mudança no backend:
+
+- A escolha fica salva no navegador (`localStorage`, chave `gestao-acoes.tema`); sem escolha salva, segue a preferência do sistema operacional (`prefers-color-scheme`).
+- Um script curto no `index.html` aplica o tema antes do primeiro desenho da página, para ela não "piscar" branca ao abrir no modo escuro.
+- Como todas as telas já usavam as variáveis CSS `--app-*`, o modo escuro só redefine essas variáveis sob a classe `tema-escuro` no `<html>` (`styles.scss`); o Angular Material usa `theme-type: color-scheme`, então campos, selects e menus também escurecem.
+- Os gráficos (Chart.js desenha em `<canvas>` e não enxerga variáveis CSS) têm uma paleta de texto/grade/bordas por tema em `graficos.ts`, e as opções viraram `computed`, então os gráficos se redesenham na hora da troca. A paleta categórica das séries é a mesma nos dois modos.
+
+Arquivos: `core/services/tema.service.ts` (novo), `src/index.html`, `src/styles.scss`, `features/shell/` (botão) e `features/graficos/` (cores por tema).
+
 **Meta acadêmica declarada**: 80% linhas / 80% ramos — **atingida** (96,86% / 87,50%). Progressão do portão de ramos: `0.70` → `0.80` → `0.85`, cada passo elevado só depois de a nova suíte sustentá-lo. Justificativas, explicação `401` × `403`, regra horizontal, posição de cada `@PreAuthorize`, uso de dublês e evidências de TDD/mutação estão em [`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md).
 
 ## Todos os testes feitos nas Aulas 13, 14 e 15

@@ -7,6 +7,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { filter } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
+import { TemaService } from '../../core/services/tema.service';
 
 interface PaginaAtual {
   titulo: string;
@@ -46,6 +47,7 @@ export class Shell {
 
   constructor(
     protected readonly authService: AuthService,
+    protected readonly temaService: TemaService,
     private readonly router: Router
   ) {
     this.atualizarPagina();

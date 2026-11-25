@@ -164,6 +164,15 @@
   flex: 1 1 auto;
 }
 
+.shell__tema {
+  color: var(--app-text-muted);
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: var(--app-primary-dark);
+  }
+}
+
 .shell__user {
   display: flex;
   align-items: center;

@@ -68,6 +68,17 @@
 
       <span class="shell__spacer"></span>
 
+      <button
+        mat-icon-button
+        type="button"
+        class="shell__tema"
+        (click)="temaService.alternar()"
+        [attr.aria-label]="temaService.escuro() ? 'Ativar modo claro' : 'Ativar modo noturno'"
+        [title]="temaService.escuro() ? 'Modo claro' : 'Modo noturno'"
+      >
+        <mat-icon>{{ temaService.escuro() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+
       @if (authService.autenticado()) {
         @if (saudacaoNome(); as nome) {
           <span class="shell__user">

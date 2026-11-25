@@ -114,7 +114,7 @@
           <canvas
             baseChart
             [data]="alocacaoData()"
-            [options]="alocacaoOptions"
+            [options]="alocacaoOptions()"
             [plugins]="[centroTotalPlugin]"
             type="doughnut"
           ></canvas>
@@ -134,21 +134,21 @@
 
     <div class="surface-card graficos__card">
       <h2 class="form-card__header"><mat-icon>show_chart</mat-icon> Evolução do valor investido</h2>
-      <canvas baseChart [data]="evolucaoData()" [options]="evolucaoOptions" type="line"></canvas>
+      <canvas baseChart [data]="evolucaoData()" [options]="evolucaoOptions()" type="line"></canvas>
     </div>
 
     <div class="surface-card graficos__card">
       <h2 class="form-card__header"><mat-icon>leaderboard</mat-icon> Retorno por ativo</h2>
       <div class="graficos__barra-scroll">
         <div class="graficos__barra-interno" [style.height.px]="retornoAltura()">
-          <canvas baseChart [data]="retornoData()" [options]="retornoOptions" type="bar"></canvas>
+          <canvas baseChart [data]="retornoData()" [options]="retornoOptions()" type="bar"></canvas>
         </div>
       </div>
     </div>
 
     <div class="surface-card graficos__card">
       <h2 class="form-card__header"><mat-icon>calendar_month</mat-icon> Proventos recebidos por mês</h2>
-      <canvas baseChart [data]="proventosMensaisData()" [options]="proventosMensaisOptions" type="bar"></canvas>
+      <canvas baseChart [data]="proventosMensaisData()" [options]="proventosMensaisOptions()" type="bar"></canvas>
     </div>
 
     @if (proventos().length > 0) {
@@ -156,7 +156,7 @@
         <h2 class="form-card__header"><mat-icon>payments</mat-icon> Proventos por ativo</h2>
         <div class="graficos__barra-scroll">
           <div class="graficos__barra-interno" [style.height.px]="proventosPorAtivoAltura()">
-            <canvas baseChart [data]="proventosPorAtivoData()" [options]="proventosPorAtivoOptions" type="bar"></canvas>
+            <canvas baseChart [data]="proventosPorAtivoData()" [options]="proventosPorAtivoOptions()" type="bar"></canvas>
           </div>
         </div>
       </div>

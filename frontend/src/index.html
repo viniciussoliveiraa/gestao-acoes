@@ -12,6 +12,22 @@
       rel="stylesheet"
     />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <script>
+      // Aplica o modo escuro antes do primeiro desenho da página (evita "piscar" branco).
+      // Mesma regra do TemaService: escolha salva > preferência do sistema.
+      (function () {
+        var tema = null;
+        try {
+          tema = localStorage.getItem('gestao-acoes.tema');
+        } catch (e) {}
+        if (tema !== 'claro' && tema !== 'escuro') {
+          tema = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'escuro' : 'claro';
+        }
+        if (tema === 'escuro') {
+          document.documentElement.classList.add('tema-escuro');
+        }
+      })();
+    </script>
   </head>
   <body>
     <app-root></app-root>
