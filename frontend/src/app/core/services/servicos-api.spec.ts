@@ -118,6 +118,11 @@ describe('Serviços HTTP da API', () => {
       esperar('GET', `${api}/corretoras`, { page: '1', size: '5' }).flush({ content: [] });
     });
 
+    it('consultarCnpj faz GET em /corretoras/consulta-cnpj/{cnpj} (prévia, sem cadastrar)', () => {
+      servico.consultarCnpj('02332886000104').subscribe();
+      esperar('GET', `${api}/corretoras/consulta-cnpj/02332886000104`).flush({});
+    });
+
     it('buscarPorCnpj faz GET em /corretoras/cnpj/{cnpj}', () => {
       servico.buscarPorCnpj('02332886000104').subscribe();
       esperar('GET', `${api}/corretoras/cnpj/02332886000104`).flush({});

@@ -20,7 +20,7 @@ npm start   # equivalente a `ng serve`, sobe em http://localhost:4200
 
 1. Abra `http://localhost:4200` → redireciona para `/login`.
 2. Cadastre-se em "Cadastre-se" ou faça login (token JWT armazenado no navegador).
-3. **Corretoras** e **Ações** podem ser consultadas sem login; cadastrá-las exige login como administrador (Aula 14 — RBAC; só cadastro + listagem, sem edição/exclusão) — cadastre ao menos uma de cada para poder registrar lançamentos.
+3. **Corretoras** e **Ações** podem ser consultadas sem login; cadastrá-las exige login como administrador (Aula 14 — RBAC; só cadastro + listagem, sem edição/exclusão). No cadastro de corretora basta digitar o CNPJ: CEP, número, complemento, email e telefone são preenchidos sozinhos, e a tela avisa se o CNPJ não consta na CVM — cadastre ao menos uma de cada para poder registrar lançamentos.
 4. **Lançamentos**: registre uma compra ou venda (tipo + ação + corretora + quantidade + preço + data) — ao escolher a ação, o preço unitário já vem preenchido com a cotação atual dela (pode ser ajustado). Venda é validada contra o saldo disponível do ativo. Lançamentos já registrados podem ser excluídos (recalcula a posição do ativo); ainda não há edição.
 5. **Resumo**: mostra a posição consolidada calculada a partir dos lançamentos.
 6. **Proventos**: registre dividendos/JCP recebidos.
@@ -48,7 +48,7 @@ src/app/
     proventos/     formulário + histórico de proventos
     graficos/      alocação (donut) e evolução (linha), via ng2-charts/Chart.js
     rebalanceamento/ metas de alocação por ativo (localStorage) e sugestão de aporte
-    corretoras/    cadastro e listagem de corretoras (público, sem edição/exclusão)
+    corretoras/    cadastro (ADMIN; preenche os campos sozinho a partir do CNPJ) e listagem pública
     acoes/         cadastro e listagem de ações (público, sem edição/exclusão)
     usuarios/      administração de usuários: alterar login, senha, papel e situação (só ADMIN)
 ```
@@ -68,7 +68,7 @@ npm run test:coverage   # testes + relatório + portão de cobertura (85%)
 npx ng test             # modo interativo: roda de novo a cada arquivo salvo
 ```
 
-Suíte do Angular CLI com Vitest (ambiente jsdom) e cobertura via `@vitest/coverage-v8`: **165 testes**, cobertura de **99,81% statements, 97,00% ramos, 99,71% funções e 100% linhas**. O relatório HTML fica em `coverage/frontend/index.html`.
+Suíte do Angular CLI com Vitest (ambiente jsdom) e cobertura via `@vitest/coverage-v8`: **173 testes**, cobertura de **99,82% statements, 96,83% ramos, 99,72% funções e 100% linhas**. O relatório HTML fica em `coverage/frontend/index.html`.
 
 - **Portão**: `coverageThresholds` no `angular.json` exige 85% nas quatro métricas; abaixo disso o comando termina com erro (o equivalente ao `check` do JaCoCo no backend).
 - **Conta honesta**: `coverageInclude` inclui todos os arquivos de `src/app`, não só os que algum teste importou.

@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CorretoraRequest, CorretoraResponse } from '../models/corretora.model';
+import { ConsultaCnpj, CorretoraRequest, CorretoraResponse } from '../models/corretora.model';
 import { Pagina } from '../models/pagina.model';
 
 @Injectable({ providedIn: 'root' })
@@ -18,6 +18,11 @@ export class CorretoraService {
   listar(page = 0, size = 20): Observable<Pagina<CorretoraResponse>> {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<Pagina<CorretoraResponse>>(this.baseUrl, { params });
+  }
+
+  /** Prévia dos dados do CNPJ (BrasilAPI + CVM), sem cadastrar. Só ADMIN. @param cnpj só os 14 dígitos. */
+  consultarCnpj(cnpj: string): Observable<ConsultaCnpj> {
+    return this.http.get<ConsultaCnpj>(`${this.baseUrl}/consulta-cnpj/${cnpj}`);
   }
 
   buscarPorCnpj(cnpj: string): Observable<CorretoraResponse> {

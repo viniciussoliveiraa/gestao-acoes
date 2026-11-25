@@ -1,5 +1,6 @@
 package br.com.gestaoacoes.service;
 
+import br.com.gestaoacoes.dto.ConsultaCnpjResponse;
 import br.com.gestaoacoes.dto.CorretoraRequest;
 import br.com.gestaoacoes.exception.CepInvalidoException;
 import br.com.gestaoacoes.exception.CnpjInvalidoException;
@@ -83,6 +84,41 @@ public class CorretoraService {
         );
 
         return repository.save(corretora);
+    }
+
+    /**
+     * Consulta os dados públicos do CNPJ (BrasilAPI) e a situação na CVM sem gravar nada, para o
+     * formulário de cadastro se preencher sozinho. Aplica as mesmas checagens iniciais do
+     * {@link #registrar}: CNPJ inválido ({@code 400}) e corretora já cadastrada ({@code 409}).
+     */
+    public ConsultaCnpjResponse consultarCnpj(String cnpj) {
+        String cnpjNormalizado = CnpjUtils.normalizar(cnpj);
+        if (!CnpjUtils.isValido(cnpjNormalizado)) {
+            throw new CnpjInvalidoException("CNPJ com formato ou dígitos verificadores inválidos");
+        }
+        if (repository.findByCnpj(cnpjNormalizado).isPresent()) {
+            throw new CorretoraDuplicadaException("Já existe uma corretora cadastrada com este CNPJ");
+        }
+
+        DadosCnpj dados = cnpjDataPort.consultar(cnpjNormalizado);
+        boolean validadaCvm = instituicaoFinanceiraPort.validar(cnpjNormalizado);
+
+        return new ConsultaCnpjResponse(
+                cnpjNormalizado,
+                dados.razaoSocial(),
+                dados.nomeFantasia(),
+                dados.situacaoCadastral(),
+                dados.email(),
+                dados.telefone(),
+                dados.cep() != null ? CepUtils.normalizar(dados.cep()) : null,
+                dados.logradouro(),
+                dados.numero(),
+                dados.complemento(),
+                dados.bairro(),
+                dados.cidade(),
+                dados.uf(),
+                validadaCvm
+        );
     }
 
     public Page<Corretora> listar(Pageable pageable) {

@@ -8,7 +8,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
 import { CorretoraService } from '../../core/services/corretora.service';
 import { mensagemDeErro } from '../../core/services/erro.util';
-import { CorretoraResponse } from '../../core/models/corretora.model';
+import { ConsultaCnpj, CorretoraResponse } from '../../core/models/corretora.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, distinctUntilChanged, filter, map, of, switchMap, tap } from 'rxjs';
 
 @Component({
   selector: 'app-corretoras',
@@ -47,10 +49,61 @@ export class Corretoras implements OnInit {
     telefone: [''],
   });
 
-  constructor(private readonly corretoraService: CorretoraService) {}
+  // Preenchimento automático: ao completar os 14 dígitos do CNPJ, consulta BrasilAPI + CVM
+  // (GET /corretoras/consulta-cnpj) e preenche CEP, número, complemento, email e telefone.
+  protected readonly consultando = signal(false);
+  protected readonly consulta = signal<ConsultaCnpj | null>(null);
+  protected readonly erroConsulta = signal<string | null>(null);
+
+  constructor(private readonly corretoraService: CorretoraService) {
+    this.form.controls.cnpj.valueChanges
+      .pipe(
+        map((valor) => (valor ?? '').replace(/\D/g, '')),
+        distinctUntilChanged(),
+        tap(() => {
+          this.consulta.set(null);
+          this.erroConsulta.set(null);
+        }),
+        filter((digitos) => digitos.length === 14),
+        tap(() => this.consultando.set(true)),
+        // switchMap: se o CNPJ mudar no meio da consulta, a resposta antiga é descartada.
+        switchMap((digitos) =>
+          this.corretoraService.consultarCnpj(digitos).pipe(
+            catchError((erro) => {
+              this.erroConsulta.set(mensagemDeErro(erro));
+              return of(null);
+            })
+          )
+        ),
+        takeUntilDestroyed()
+      )
+      .subscribe((dados) => {
+        this.consultando.set(false);
+        if (dados) {
+          this.consulta.set(dados);
+          this.preencherCom(dados);
+        }
+      });
+  }
 
   ngOnInit(): void {
     this.carregar();
+  }
+
+  /** Só sobrescreve com o que a consulta trouxe; o usuário continua podendo editar tudo. */
+  private preencherCom(dados: ConsultaCnpj): void {
+    const preenchido = {
+      cep: dados.cep,
+      numero: dados.numero,
+      complemento: dados.complemento,
+      email: dados.email,
+      telefone: dados.telefone,
+    };
+    for (const [campo, valor] of Object.entries(preenchido)) {
+      if (valor) {
+        this.form.get(campo)?.setValue(valor);
+      }
+    }
   }
 
   submeter(): void {

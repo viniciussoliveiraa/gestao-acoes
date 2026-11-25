@@ -1,5 +1,6 @@
 package br.com.gestaoacoes.service;
 
+import br.com.gestaoacoes.dto.ConsultaCnpjResponse;
 import br.com.gestaoacoes.dto.CorretoraRequest;
 import br.com.gestaoacoes.exception.CepInvalidoException;
 import br.com.gestaoacoes.exception.CnpjInvalidoException;
@@ -132,5 +133,64 @@ class CorretoraServiceTest {
         return new Corretora("11222333000181", "Razao", "Fantasia", null, null, "01310100",
                 "Av. Paulista", "1000", null, "Bela Vista", "Sao Paulo", "SP", "ATIVA", true,
                 java.time.OffsetDateTime.now());
+    }
+
+    // ---- Prévia por CNPJ (preenchimento automático do formulário) ----
+
+    @Test
+    void consultarCnpjDevolveDadosDaBrasilApiESituacaoNaCvmSemGravar() {
+        service = service();
+        when(repository.findByCnpj("11222333000181")).thenReturn(Optional.empty());
+        when(cnpjDataPort.consultar("11222333000181")).thenReturn(new DadosCnpj(
+                "Razao LTDA", "Fantasia", "ATIVA", "contato@empresa.com", "1130000000",
+                "01310-100", "Av. Paulista", "1000", "Andar 5", "Bela Vista", "Sao Paulo", "SP"));
+        when(instituicaoFinanceiraPort.validar("11222333000181")).thenReturn(true);
+
+        ConsultaCnpjResponse resposta = service.consultarCnpj("11.222.333/0001-81");
+
+        assertThat(resposta.cnpj()).isEqualTo("11222333000181");
+        assertThat(resposta.razaoSocial()).isEqualTo("Razao LTDA");
+        assertThat(resposta.cep()).isEqualTo("01310100");
+        assertThat(resposta.numero()).isEqualTo("1000");
+        assertThat(resposta.complemento()).isEqualTo("Andar 5");
+        assertThat(resposta.email()).isEqualTo("contato@empresa.com");
+        assertThat(resposta.telefone()).isEqualTo("1130000000");
+        assertThat(resposta.cidade()).isEqualTo("Sao Paulo");
+        assertThat(resposta.validadaCvm()).isTrue();
+        verify(repository, never()).save(any());
+        verifyNoInteractions(enderecoPort);
+    }
+
+    @Test
+    void consultarCnpjForaDaCvmAvisaQueOCadastroSeriaRecusado() {
+        service = service();
+        when(repository.findByCnpj("11222333000181")).thenReturn(Optional.empty());
+        when(cnpjDataPort.consultar("11222333000181")).thenReturn(new DadosCnpj(
+                "Loja LTDA", null, "ATIVA", null, null, null, null, null, null, null, null, null));
+        when(instituicaoFinanceiraPort.validar("11222333000181")).thenReturn(false);
+
+        ConsultaCnpjResponse resposta = service.consultarCnpj("11222333000181");
+
+        assertThat(resposta.validadaCvm()).isFalse();
+        assertThat(resposta.cep()).isNull();
+    }
+
+    @Test
+    void consultarCnpjInvalidoNaoConsultaProvedores() {
+        service = service();
+
+        assertThatThrownBy(() -> service.consultarCnpj("11222333000180")).isInstanceOf(CnpjInvalidoException.class);
+
+        verifyNoInteractions(cnpjDataPort, instituicaoFinanceiraPort);
+    }
+
+    @Test
+    void consultarCnpjJaCadastradoAvisaDuplicidadeSemConsultarProvedores() {
+        service = service();
+        when(repository.findByCnpj("11222333000181")).thenReturn(Optional.of(mockCorretora()));
+
+        assertThatThrownBy(() -> service.consultarCnpj("11222333000181")).isInstanceOf(CorretoraDuplicadaException.class);
+
+        verifyNoInteractions(cnpjDataPort, instituicaoFinanceiraPort);
     }
 }

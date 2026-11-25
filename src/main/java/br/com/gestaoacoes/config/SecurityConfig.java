@@ -83,6 +83,11 @@ public class SecurityConfig {
                         // corretoras/ações sem login. Criar/alterar exige autenticação aqui — e
                         // exige o papel ADMIN via @PreAuthorize nos controllers (Aula 14), o que
                         // distingue 401 (sem token) de 403 (autenticado, mas não é ADMIN).
+                        // Exceção dentro do catálogo: a prévia por CNPJ consulta provedores externos
+                        // e serve só ao formulário de cadastro (ADMIN via @PreAuthorize). Vem antes
+                        // da regra pública para que, sem token, a resposta seja 401 e não 403.
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/corretoras/consulta-cnpj/**")
+                        .authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/corretoras/**", "/acoes/**")
                         .permitAll()
                         .anyRequest().authenticated())

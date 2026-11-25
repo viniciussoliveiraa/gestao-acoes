@@ -158,4 +158,86 @@ class CorretoraFluxoIntegrationTest {
                         .content("{\"cnpj\":\"11.222.333/0001-81\",\"cep\":\"01310-100\",\"numero\":\"1000\"}"))
                 .andExpect(status().isForbidden());
     }
+
+    // ---- Prévia por CNPJ (GET /corretoras/consulta-cnpj/{cnpj}) ----
+
+    private String tokenUsuarioComum(String email) throws Exception {
+        usuarioRepository.save(new Usuario("User", email, passwordEncoder.encode("senhaUser123"),
+                Papel.USER, true, OffsetDateTime.now()));
+        String respostaLogin = mockMvc.perform(post("/auth/login")
+                        .contentType("application/json")
+                        .content("{\"email\":\"" + email + "\",\"senha\":\"senhaUser123\"}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(respostaLogin).get("token").asText();
+    }
+
+    @Test
+    void consultaCnpjComAdminDevolveDadosParaPreencherOFormularioSemGravar() throws Exception {
+        String token = tokenAdmin();
+        brasilApiServer.enqueue(new MockResponse().setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "razao_social": "XP INVESTIMENTOS CCTVM S.A.",
+                          "nome_fantasia": "XP",
+                          "descricao_situacao_cadastral": "ATIVA",
+                          "email": "contato@xp.com.br",
+                          "ddd_telefone_1": "1133331234",
+                          "cep": "04538133",
+                          "logradouro": "AVENIDA BRIGADEIRO FARIA LIMA",
+                          "numero": "3600",
+                          "complemento": "10 ANDAR",
+                          "bairro": "ITAIM BIBI",
+                          "municipio": "SAO PAULO",
+                          "uf": "SP"
+                        }
+                        """));
+        brasilApiServer.enqueue(new MockResponse().setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{\"cnpj\":\"02332886000104\",\"status\":\"EM FUNCIONAMENTO NORMAL\"}"));
+
+        mockMvc.perform(get("/corretoras/consulta-cnpj/02332886000104")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cnpj").value("02332886000104"))
+                .andExpect(jsonPath("$.razaoSocial").value("XP INVESTIMENTOS CCTVM S.A."))
+                .andExpect(jsonPath("$.cep").value("04538133"))
+                .andExpect(jsonPath("$.numero").value("3600"))
+                .andExpect(jsonPath("$.complemento").value("10 ANDAR"))
+                .andExpect(jsonPath("$.telefone").value("1133331234"))
+                .andExpect(jsonPath("$.cidade").value("SAO PAULO"))
+                .andExpect(jsonPath("$.validadaCvm").value(true));
+
+        assertThat(repository.findByCnpj("02332886000104")).isEmpty();
+    }
+
+    @Test
+    void consultaCnpjSemTokenRetorna401() throws Exception {
+        mockMvc.perform(get("/corretoras/consulta-cnpj/02332886000104"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void consultaCnpjComUsuarioSemPapelAdminRetorna403() throws Exception {
+        String token = tokenUsuarioComum("user.consulta@exemplo.com");
+
+        mockMvc.perform(get("/corretoras/consulta-cnpj/02332886000104")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void consultaCnpjInvalidoRetorna400() throws Exception {
+        String token = tokenAdmin();
+
+        mockMvc.perform(get("/corretoras/consulta-cnpj/11222333000180")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void listagemPublicaContinuaSemExigirLogin() throws Exception {
+        mockMvc.perform(get("/corretoras")).andExpect(status().isOk());
+    }
 }

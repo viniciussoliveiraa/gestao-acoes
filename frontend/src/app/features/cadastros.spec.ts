@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { ConsultaCnpj } from '../core/models/corretora.model';
 import { AcaoService } from '../core/services/acao.service';
 import { CarteiraService } from '../core/services/carteira.service';
 import { CorretoraService } from '../core/services/corretora.service';
@@ -20,12 +21,34 @@ function renderizar<T>(componente: new (...args: any[]) => T, providers: unknown
 }
 
 describe('Tela Corretoras', () => {
-  let servico: { listar: ReturnType<typeof vi.fn>; cadastrar: ReturnType<typeof vi.fn> };
+  let servico: {
+    listar: ReturnType<typeof vi.fn>;
+    cadastrar: ReturnType<typeof vi.fn>;
+    consultarCnpj: ReturnType<typeof vi.fn>;
+  };
+
+  const dadosXp: ConsultaCnpj = {
+    cnpj: '02332886000104',
+    razaoSocial: 'XP INVESTIMENTOS CCTVM S.A.',
+    nomeFantasia: 'XP',
+    situacaoCadastral: 'ATIVA',
+    email: 'contato@xp.com.br',
+    telefone: '1133331234',
+    cep: '04538133',
+    logradouro: 'AVENIDA BRIGADEIRO FARIA LIMA',
+    numero: '3600',
+    complemento: '10 ANDAR',
+    bairro: 'ITAIM BIBI',
+    cidade: 'SAO PAULO',
+    uf: 'SP',
+    validadaCvm: true,
+  };
 
   function criar(lista = [corretora(), corretora({ id: 2, razaoSocial: 'Genial', uf: 'RJ', validadaCvm: false })]) {
     servico = {
       listar: vi.fn(() => of(pagina(lista))),
       cadastrar: vi.fn(() => of(corretora({ razaoSocial: 'Nova Corretora' }))),
+      consultarCnpj: vi.fn(() => of(dadosXp)),
     };
     return renderizar(Corretoras, [{ provide: CorretoraService, useValue: servico }]);
   }
@@ -54,6 +77,10 @@ describe('Tela Corretoras', () => {
 
   it('cadastro certo envia campos opcionais vazios como null e recarrega a lista', () => {
     const { fixture, tela, texto } = criar();
+    // Consulta do CNPJ sem dados opcionais: nada é preenchido sozinho.
+    servico.consultarCnpj.mockReturnValue(
+      of({ ...dadosXp, cep: null, numero: null, complemento: null, email: null, telefone: null })
+    );
     tela.form.patchValue({ cnpj: '02332886000104', cep: '04538133' });
 
     tela.submeter();
@@ -85,6 +112,96 @@ describe('Tela Corretoras', () => {
     tela.submeter();
 
     expect(servico.cadastrar).toHaveBeenCalledWith(expect.objectContaining({ numero: '10', telefone: '1199999999' }));
+  });
+
+  describe('preenchimento automático pelo CNPJ', () => {
+    it('enquanto o CNPJ está incompleto não consulta nada', () => {
+      const { tela } = criar();
+
+      tela.form.controls.cnpj.setValue('02.332.886/0001');
+
+      expect(servico.consultarCnpj).not.toHaveBeenCalled();
+      expect(tela.consulta()).toBeNull();
+    });
+
+    it('com os 14 dígitos (com ou sem máscara) consulta e preenche os outros campos', () => {
+      const { fixture, tela, texto } = criar();
+
+      tela.form.controls.cnpj.setValue('02.332.886/0001-04');
+      fixture.detectChanges();
+
+      expect(servico.consultarCnpj).toHaveBeenCalledWith('02332886000104');
+      expect(tela.form.getRawValue()).toEqual({
+        cnpj: '02.332.886/0001-04',
+        cep: '04538133',
+        numero: '3600',
+        complemento: '10 ANDAR',
+        email: 'contato@xp.com.br',
+        telefone: '1133331234',
+      });
+      expect(tela.consultando()).toBe(false);
+      expect(texto()).toContain('XP INVESTIMENTOS CCTVM S.A.');
+      expect(texto()).toContain('AVENIDA BRIGADEIRO FARIA LIMA, 3600');
+      expect(texto()).toContain('Em funcionamento na CVM');
+    });
+
+    it('não consulta de novo se só a máscara mudou', () => {
+      const { tela } = criar();
+
+      tela.form.controls.cnpj.setValue('02332886000104');
+      tela.form.controls.cnpj.setValue('02.332.886/0001-04');
+
+      expect(servico.consultarCnpj).toHaveBeenCalledTimes(1);
+    });
+
+    it('campos que o CNPJ não informa ficam como o usuário digitou', () => {
+      const { fixture, tela, texto } = criar();
+      servico.consultarCnpj.mockReturnValue(
+        of({ ...dadosXp, email: null, telefone: null, complemento: null, logradouro: null, nomeFantasia: null, situacaoCadastral: null })
+      );
+      tela.form.controls.email.setValue('meu@email.com');
+
+      tela.form.controls.cnpj.setValue('02332886000104');
+      fixture.detectChanges();
+
+      expect(tela.form.controls.email.value).toBe('meu@email.com');
+      expect(tela.form.controls.cep.value).toBe('04538133');
+      expect(texto()).not.toContain('Receita:');
+    });
+
+    it('CNPJ fora da CVM mostra o aviso de que o cadastro será recusado', () => {
+      const { fixture, tela, texto } = criar();
+      servico.consultarCnpj.mockReturnValue(of({ ...dadosXp, validadaCvm: false }));
+
+      tela.form.controls.cnpj.setValue('02332886000104');
+      fixture.detectChanges();
+
+      expect(texto()).toContain('Não consta na CVM: o cadastro será recusado');
+    });
+
+    it('CNPJ já cadastrado (409) mostra o erro e não preenche nada', () => {
+      const { fixture, tela, texto } = criar();
+      servico.consultarCnpj.mockReturnValue(erroHttp(409, 'Já existe uma corretora cadastrada com este CNPJ'));
+
+      tela.form.controls.cnpj.setValue('02332886000104');
+      fixture.detectChanges();
+
+      expect(texto()).toContain('Já existe uma corretora cadastrada com este CNPJ');
+      expect(tela.consulta()).toBeNull();
+      expect(tela.consultando()).toBe(false);
+      expect(tela.form.controls.cep.value).toBe('');
+    });
+
+    it('apagar um dígito do CNPJ limpa o quadro e o erro', () => {
+      const { tela } = criar();
+      tela.form.controls.cnpj.setValue('02332886000104');
+      expect(tela.consulta()).not.toBeNull();
+
+      tela.form.controls.cnpj.setValue('0233288600010');
+
+      expect(tela.consulta()).toBeNull();
+      expect(tela.erroConsulta()).toBeNull();
+    });
   });
 
   it('erro do backend (ex.: 403 sem ser admin) aparece na tela', () => {

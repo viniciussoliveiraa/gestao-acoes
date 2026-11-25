@@ -1,5 +1,6 @@
 package br.com.gestaoacoes.controller;
 
+import br.com.gestaoacoes.dto.ConsultaCnpjResponse;
 import br.com.gestaoacoes.dto.CorretoraRequest;
 import br.com.gestaoacoes.dto.CorretoraResponse;
 import br.com.gestaoacoes.mapper.CorretoraMapper;
@@ -40,6 +41,17 @@ public class CorretoraController {
     public CorretoraResponse registrar(@Valid @RequestBody CorretoraRequest request) {
         Corretora corretora = service.registrar(request);
         return mapper.toResponse(corretora);
+    }
+
+    /**
+     * Prévia dos dados do CNPJ (BrasilAPI + CVM) para o formulário se preencher sozinho; não grava
+     * nada. Só ADMIN, o mesmo papel que cadastra — assim a API não vira um proxy público da
+     * BrasilAPI. Sem token é 401 (regra em SecurityConfig); sem ADMIN é 403.
+     */
+    @GetMapping("/consulta-cnpj/{cnpj}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ConsultaCnpjResponse consultarCnpj(@PathVariable String cnpj) {
+        return service.consultarCnpj(cnpj);
     }
 
     @GetMapping

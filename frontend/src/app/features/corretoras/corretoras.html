@@ -12,7 +12,47 @@
     <mat-form-field appearance="outline">
       <mat-label>CNPJ</mat-label>
       <input matInput formControlName="cnpj" placeholder="00.000.000/0000-00" />
+      @if (consultando()) {
+        <mat-progress-spinner matSuffix diameter="18" mode="indeterminate" class="corretoras__spinner" />
+      }
+      <mat-hint>Digite o CNPJ: os outros campos são preenchidos sozinhos</mat-hint>
     </mat-form-field>
+
+    @if (erroConsulta()) {
+      <p class="form-feedback--erro">{{ erroConsulta() }}</p>
+    }
+
+    @if (consulta(); as dados) {
+      <div class="corretoras__previa">
+        <div class="corretoras__previa-titulo">
+          <mat-icon>domain</mat-icon>
+          <div>
+            <strong>{{ dados.razaoSocial }}</strong>
+            @if (dados.nomeFantasia) {
+              <span class="corretoras__previa-fantasia">{{ dados.nomeFantasia }}</span>
+            }
+          </div>
+        </div>
+        @if (dados.logradouro) {
+          <p class="corretoras__previa-linha">
+            <mat-icon>place</mat-icon>
+            {{ dados.logradouro }}{{ dados.numero ? ', ' + dados.numero : '' }}
+            {{ dados.bairro ? '— ' + dados.bairro : '' }}
+            {{ dados.cidade ? '— ' + dados.cidade + '/' + dados.uf : '' }}
+          </p>
+        }
+        <div class="corretoras__previa-selos">
+          @if (dados.situacaoCadastral) {
+            <span class="trend">Receita: {{ dados.situacaoCadastral }}</span>
+          }
+          @if (dados.validadaCvm) {
+            <span class="trend trend--positive"><mat-icon>verified</mat-icon> Em funcionamento na CVM</span>
+          } @else {
+            <span class="trend trend--negative"><mat-icon>warning</mat-icon> Não consta na CVM: o cadastro será recusado</span>
+          }
+        </div>
+      </div>
+    }
 
     <mat-form-field appearance="outline">
       <mat-label>CEP</mat-label>

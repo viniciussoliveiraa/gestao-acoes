@@ -66,3 +66,85 @@
   font-weight: 700;
   color: var(--app-text);
 }
+// ---- Preenchimento automático pelo CNPJ ----
+
+.corretoras__spinner {
+  margin-right: 8px;
+}
+
+.corretoras__previa {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--app-radius-md);
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-muted);
+  animation: previaIn 0.25s ease-out;
+}
+
+.corretoras__previa-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--app-text);
+
+  mat-icon {
+    color: var(--app-primary-dark);
+  }
+
+  strong {
+    display: block;
+  }
+}
+
+.corretoras__previa-fantasia {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--app-text-muted);
+}
+
+.corretoras__previa-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--app-text-muted);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.corretoras__previa-selos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@keyframes previaIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corretoras__previa {
+    animation: none;
+  }
+}

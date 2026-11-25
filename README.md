@@ -46,7 +46,7 @@ Um frontend Angular consome esta API — ver [`frontend/README.md`](frontend/REA
 | Diferencial | Status |
 |---|---|
 | Feign Client ou WebClient | ✅ Feign Client (`@FeignClient` em todos os adapters de integração) |
-| Testes unitários e/ou de integração | ✅ 226 testes (`@DataJpaTest`, `@WebMvcTest`, integração ponta a ponta, `MockWebServer`), com portão de cobertura JaCoCo (`./mvnw clean verify`) |
+| Testes unitários e/ou de integração | ✅ 235 testes (`@DataJpaTest`, `@WebMvcTest`, integração ponta a ponta, `MockWebServer`), com portão de cobertura JaCoCo (`./mvnw clean verify`) |
 | Paginação nas listagens | ✅ `Pageable`/`Page` em corretoras, ações, lançamentos e proventos |
 | Logs estruturados | ✅ `CorrelationIdFilter` + padrão de log com `correlationId` |
 | Cache para consultas externas | ❌ Não implementado |
@@ -203,9 +203,18 @@ O JaCoCo mede só o backend (Java). Para o frontend Angular, o equivalente é o 
 | Valores de fronteira / parametrizados | `it.each` na força da senha, na saudação por horário, paginador (lista vazia, última página) |
 | Mutação manual | trocar `ROLE_ADMIN` por `ROLE_USER` em `auth.service.ts` derruba 2 testes |
 
-Medição atual: **165 testes, 99,81% statements, 97,00% ramos, 99,71% funções, 100% linhas**. Os ramos restantes são proteções `typeof window === 'undefined'` (código fora do navegador), que não ocorrem no uso real. Demonstração do portão falhando: `npx ng test --watch=false --coverage --exclude=src/app/features/graficos/graficos.spec.ts` (cobertura cai para ~79% e o comando termina com erro).
+Medição atual: **173 testes, 99,82% statements, 96,83% ramos, 99,72% funções, 100% linhas**. Os ramos restantes são proteções `typeof window === 'undefined'` (código fora do navegador), que não ocorrem no uso real. Demonstração do portão falhando: `npx ng test --watch=false --coverage --exclude=src/app/features/graficos/graficos.spec.ts` (cobertura cai para ~80% e o comando termina com erro).
 
 O que é testado: todas as telas (login, cadastro, menu/topo, Resumo, Lançamentos, Proventos, Gráficos, Reequilíbrio, Corretoras, Ações, Usuários), nos caminhos de sucesso e de erro do backend (`401`/`403`/`404`/`409`/`422`/`503`), e toda a pasta `core` (`AuthService`, guards, interceptor, serviços HTTP, modo noturno, mensagens de erro, paginador, rotas). Os testes não fazem chamadas reais à API e não entram no build de produção (`tsconfig.app.json` exclui `*.spec.ts`, `src/test-setup.ts` e `core/testing/`).
+
+**Extensão além da aula — preenchimento automático da corretora pelo CNPJ**
+
+Na tela Corretoras, ao completar os 14 dígitos do CNPJ (com ou sem máscara), o formulário consulta `GET /corretoras/consulta-cnpj/{cnpj}` e preenche sozinho CEP, número, complemento, email e telefone (o usuário continua podendo editar). Um quadro mostra razão social, nome fantasia, endereço, situação na Receita e um selo **"Em funcionamento na CVM"** — ou o aviso **"o cadastro será recusado"** quando o CNPJ não consta na CVM, antes de tentar salvar.
+
+- **Backend**: `CorretoraService.consultarCnpj` reaproveita os mesmos adaptadores do cadastro (`CnpjDataPort` → BrasilAPI, `InstituicaoFinanceiraPort` → CVM) e as mesmas checagens iniciais (`400` CNPJ inválido, `409` já cadastrada), mas **não grava nada**; devolve `ConsultaCnpjResponse`. O cadastro continua sendo o `POST /corretoras`, sem mudança.
+- **Segurança (mesma regra da Aula 14)**: só `ADMIN` (`@PreAuthorize`), o mesmo papel que cadastra — assim a API não vira um proxy público da BrasilAPI. Como `GET /corretoras/**` é público, o `SecurityConfig` ganhou uma regra `.authenticated()` para este caminho **antes** da regra pública, para que sem token a resposta seja `401` (e `403` para `USER`). A listagem e a busca de corretoras continuam públicas.
+- **Frontend**: `corretoras.ts` escuta o campo CNPJ (só dígitos, `distinctUntilChanged`, `switchMap` — se o CNPJ mudar no meio da consulta, a resposta antiga é descartada) e só sobrescreve os campos que a consulta trouxe.
+- **Testes**: 4 unitários em `CorretoraServiceTest` e 5 de integração em `CorretoraFluxoIntegrationTest` (`200` sem gravar, `401`, `403`, `400`, listagem pública intacta); 8 no frontend (preenchimento, máscara, campos vazios, aviso da CVM, `409`, limpar ao apagar um dígito). Verificado também com a BrasilAPI real.
 
 **Meta acadêmica declarada**: 80% linhas / 80% ramos — **atingida** (96,86% / 87,50%). Progressão do portão de ramos: `0.70` → `0.80` → `0.85`, cada passo elevado só depois de a nova suíte sustentá-lo. Justificativas, explicação `401` × `403`, regra horizontal, posição de cada `@PreAuthorize`, uso de dublês e evidências de TDD/mutação estão em [`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md).
 
@@ -536,7 +545,8 @@ Só o caso `[4]` (73 caracteres) falhou; 7, 8 e 72 já se comportavam como esper
 | Linha de base (commit `ef6d0ed`) | 170 | 96,35% (818/849) | 77,54% (107/138) |
 | + ciclos TDD + testes de integração das Aulas 13/14 | 205 | — | 80,26% (122/152) |
 | + `JwtPropertiesTest`, `CorrelationIdFilterTest`, `GlobalExceptionHandlerTest` | 222 | 96,52% (831/861) | 84,87% (129/152) |
-| + `CnpjUtilsTest`/`CepUtilsTest` (entrada nula, 1º dígito verificador errado, dígito verificador igual a 0) | **226** | **96,86% (834/861)** | **87,50% (133/152)** |
+| + `CnpjUtilsTest`/`CepUtilsTest` (entrada nula, 1º dígito verificador errado, dígito verificador igual a 0) | 226 | 96,86% (834/861) | 87,50% (133/152) |
+| + prévia por CNPJ (`consultarCnpj`: unitários + integração 200/400/401/403), depois das aulas | **235** | **97,06% (859/885)** | **87,97% (139/158)** |
 
 - Portão de ramos: **`0.70` → `0.80`** (meta acadêmica), elevado só depois de a suíte sustentar
   84,87%; depois **`0.80` → `0.85`**, só depois de a suíte sustentar 87,50%, deixando margem para
@@ -606,7 +616,7 @@ ao do backend:
 
 1. instala o Node 22 (mesma versão do `frontend/Dockerfile`) com cache do npm;
 2. executa `npm ci` e `npm run test:coverage` dentro de `frontend/` — o mesmo comando usado
-   localmente, com os 165 testes e o portão de 85% do `angular.json`;
+   localmente, com os 173 testes e o portão de 85% do `angular.json`;
 3. publica `frontend/coverage/frontend/` como artefato `relatorio-cobertura-frontend`, mesmo se falhar.
 
 ### 10. Postman
@@ -821,7 +831,7 @@ Nesse caso, no IntelliJ use `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:$
 ./mvnw test
 ```
 
-A suíte completa (226 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor. As fatias `@WebMvcTest` de `/carteira`, `/proventos`, `/usuarios` e de `/auth` (só o teste de `/auth/me`) carregam a `SecurityFilterChain` real (`SecurityConfig` + `JwtPrincipalConverter`) para exercitar `401`/`403` de verdade; as demais (`/corretoras`, `/acoes`) desligam os filtros de servlet (`addFilters = false`) por testarem só a lógica do controller — a autorização desses dois endpoints é coberta pelos testes de integração ponta a ponta (`CorretoraFluxoIntegrationTest`/`AcaoFluxoIntegrationTest`), com contexto completo.
+A suíte completa (235 testes na versão atual: unitários, `@DataJpaTest`, `@WebMvcTest` e integração ponta a ponta) roda inteiramente sobre H2 e mocks HTTP locais (`MockWebServer`) — **nenhum teste faz chamada de rede real** às APIs externas, portanto a suíte não consome cotas de nenhum provedor. As fatias `@WebMvcTest` de `/carteira`, `/proventos`, `/usuarios` e de `/auth` (só o teste de `/auth/me`) carregam a `SecurityFilterChain` real (`SecurityConfig` + `JwtPrincipalConverter`) para exercitar `401`/`403` de verdade; as demais (`/corretoras`, `/acoes`) desligam os filtros de servlet (`addFilters = false`) por testarem só a lógica do controller — a autorização desses dois endpoints é coberta pelos testes de integração ponta a ponta (`CorretoraFluxoIntegrationTest`/`AcaoFluxoIntegrationTest`), com contexto completo.
 
 ```bash
 ./mvnw clean verify
@@ -829,7 +839,7 @@ A suíte completa (226 testes na versão atual: unitários, `@DataJpaTest`, `@We
 
 Além dos testes, `verify` gera o relatório de cobertura JaCoCo (`target/site/jacoco/index.html`) e falha o build se a cobertura cair abaixo do portão configurado em `pom.xml` (`jacoco.minimum.line.coverage`/`jacoco.minimum.branch.coverage`) — ver detalhes na seção [Aderência às aulas de login JWT, controle de acesso e testes/cobertura](#aderência-às-aulas-de-login-jwt-controle-de-acesso-e-testescobertura).
 
-Testes do frontend (165 testes, portão de 85% de cobertura — ver [`frontend/README.md`](frontend/README.md)):
+Testes do frontend (173 testes, portão de 85% de cobertura — ver [`frontend/README.md`](frontend/README.md)):
 
 ```bash
 cd frontend
@@ -846,6 +856,7 @@ npm run test:coverage   # relatório em frontend/coverage/frontend/index.html
 | `GET` | `/corretoras` | Não | Lista corretoras (paginado) |
 | `GET` | `/corretoras/{id}` | Não | Busca corretora por ID |
 | `GET` | `/corretoras/cnpj/{cnpj}` | Não | Busca corretora por CNPJ (com ou sem máscara) |
+| `GET` | `/corretoras/consulta-cnpj/{cnpj}` | **Sim** (ADMIN) | Prévia dos dados do CNPJ (BrasilAPI) e da situação na CVM, **sem cadastrar** — usada pelo formulário para se preencher sozinho; `400` CNPJ inválido, `409` já cadastrada |
 | `POST` | `/acoes` | **Sim** (ADMIN) | Cadastra ação (ticker validado e cotação obtida do provedor do mercado) |
 | `GET` | `/acoes` | Não | Lista ações (paginado) |
 | `GET` | `/acoes/{id}` | Não | Busca ação por ID |
