@@ -190,6 +190,23 @@ Botão de lua/sol na barra do topo alterna a interface inteira entre modo claro 
 
 Arquivos: `core/services/tema.service.ts` (novo), `src/index.html`, `src/styles.scss`, `features/shell/` (botão) e `features/graficos/` (cores por tema).
 
+**Extensão além da aula — testes e cobertura do frontend (Vitest)**
+
+O JaCoCo mede só o backend (Java). Para o frontend Angular, o equivalente é o Vitest (executor de testes padrão do Angular CLI) com o provedor de cobertura `@vitest/coverage-v8`, aplicando as mesmas práticas da Aula 15:
+
+| Prática da Aula 15 | No frontend |
+|---|---|
+| Relatório de cobertura | `npm run test:coverage` → `frontend/coverage/frontend/index.html` (HTML) + resumo no terminal + `lcov.info` |
+| Contar o projeto inteiro, sem esconder arquivos | `coverageInclude: src/app/**/*.ts` no `angular.json` — telas sem teste entrariam no total como 0% |
+| Portão que falha o comando se a cobertura cair | `coverageThresholds` 85% em statements, ramos, funções e linhas (`angular.json`) |
+| Dublês no lugar das dependências | serviços simulados com `vi.fn()`, `HttpTestingController` para conferir as chamadas HTTP, diretiva falsa no lugar do gráfico (jsdom não tem `<canvas>`) |
+| Valores de fronteira / parametrizados | `it.each` na força da senha, na saudação por horário, paginador (lista vazia, última página) |
+| Mutação manual | trocar `ROLE_ADMIN` por `ROLE_USER` em `auth.service.ts` derruba 2 testes |
+
+Medição atual: **165 testes, 99,81% statements, 97,00% ramos, 99,71% funções, 100% linhas**. Os ramos restantes são proteções `typeof window === 'undefined'` (código fora do navegador), que não ocorrem no uso real. Demonstração do portão falhando: `npx ng test --watch=false --coverage --exclude=src/app/features/graficos/graficos.spec.ts` (cobertura cai para ~79% e o comando termina com erro).
+
+O que é testado: todas as telas (login, cadastro, menu/topo, Resumo, Lançamentos, Proventos, Gráficos, Reequilíbrio, Corretoras, Ações, Usuários), nos caminhos de sucesso e de erro do backend (`401`/`403`/`404`/`409`/`422`/`503`), e toda a pasta `core` (`AuthService`, guards, interceptor, serviços HTTP, modo noturno, mensagens de erro, paginador, rotas). Os testes não fazem chamadas reais à API e não entram no build de produção (`tsconfig.app.json` exclui `*.spec.ts`, `src/test-setup.ts` e `core/testing/`).
+
 **Meta acadêmica declarada**: 80% linhas / 80% ramos — **atingida** (96,86% / 87,50%). Progressão do portão de ramos: `0.70` → `0.80` → `0.85`, cada passo elevado só depois de a nova suíte sustentá-lo. Justificativas, explicação `401` × `403`, regra horizontal, posição de cada `@PreAuthorize`, uso de dublês e evidências de TDD/mutação estão em [`docs/evidencias-aulas-13-14-15.md`](docs/evidencias-aulas-13-14-15.md).
 
 ## Todos os testes feitos nas Aulas 13, 14 e 15
@@ -803,6 +820,13 @@ A suíte completa (226 testes na versão atual: unitários, `@DataJpaTest`, `@We
 ```
 
 Além dos testes, `verify` gera o relatório de cobertura JaCoCo (`target/site/jacoco/index.html`) e falha o build se a cobertura cair abaixo do portão configurado em `pom.xml` (`jacoco.minimum.line.coverage`/`jacoco.minimum.branch.coverage`) — ver detalhes na seção [Aderência às aulas de login JWT, controle de acesso e testes/cobertura](#aderência-às-aulas-de-login-jwt-controle-de-acesso-e-testescobertura).
+
+Testes do frontend (165 testes, portão de 85% de cobertura — ver [`frontend/README.md`](frontend/README.md)):
+
+```bash
+cd frontend
+npm run test:coverage   # relatório em frontend/coverage/frontend/index.html
+```
 
 **Nota de ambiente**: o perfil de testes é fixado por `src/test/resources/application.properties` (`spring.profiles.active=test`). Se os testes começarem a conectar em um PostgreSQL local em vez do H2 em memória, confira esse arquivo — algum editor pode corrompê-lo (ex.: autocomplete inserindo uma quebra de linha no meio de `spring.profiles.active`).
 

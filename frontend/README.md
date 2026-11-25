@@ -39,6 +39,7 @@ src/app/
     interceptors/  authInterceptor (anexa Bearer token, trata 401 global)
     models/        interfaces TypeScript espelhando os DTOs do backend
     services/      um serviço HTTP por recurso (Auth, Carteira, Provento, Corretora, Acao, Usuario) + TemaService (modo claro/escuro)
+    testing/       apoio só para os testes (dados de exemplo, JWT falso) — fora do build
   features/
     auth/          login, registro
     shell/         layout com sidebar/toolbar (envolve as telas autenticadas e públicas)
@@ -63,10 +64,17 @@ Gera os artefatos em `dist/frontend/`. Não há integração automática com o b
 ## Testes
 
 ```bash
-ng test
+npm run test:coverage   # testes + relatório + portão de cobertura (85%)
+npx ng test             # modo interativo: roda de novo a cada arquivo salvo
 ```
 
-Roda a suíte padrão do Angular CLI (Vitest). Cobertura mínima — o esforço de testes automatizados deste projeto está concentrado no backend (140 testes).
+Suíte do Angular CLI com Vitest (ambiente jsdom) e cobertura via `@vitest/coverage-v8`: **165 testes**, cobertura de **99,81% statements, 97,00% ramos, 99,71% funções e 100% linhas**. O relatório HTML fica em `coverage/frontend/index.html`.
+
+- **Portão**: `coverageThresholds` no `angular.json` exige 85% nas quatro métricas; abaixo disso o comando termina com erro (o equivalente ao `check` do JaCoCo no backend).
+- **Conta honesta**: `coverageInclude` inclui todos os arquivos de `src/app`, não só os que algum teste importou.
+- **Onde estão**: um `.spec.ts` ao lado de cada parte testada; telas agrupadas em `features/cadastros.spec.ts` (Corretoras, Ações, Lançamentos, Proventos) e `features/carteira.spec.ts` (Resumo, Reequilíbrio).
+- **Apoio**: `src/test-setup.ts` simula `window.matchMedia` (o jsdom não tem); `core/testing/dados.ts` tem dados de exemplo e o erro HTTP simulado; `core/testing/jwt-falso.ts` monta tokens para testar login/papel.
+- Nenhum teste chama a API de verdade (serviços simulados e `HttpTestingController`), e nada disso entra no build de produção.
 
 ## Limitações conhecidas
 
